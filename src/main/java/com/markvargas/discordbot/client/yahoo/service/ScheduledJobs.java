@@ -12,7 +12,7 @@ public class ScheduledJobs {
 
   @Autowired private YahooService yahooService;
 
-  @Scheduled(fixedRate = 2700_000)
+  @Scheduled(fixedRate = 600_000)
   public void getAuthTokenJob() {
     log.info("Fetching new access token");
     yahooService.saveAuthToken();
