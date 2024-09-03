@@ -1,6 +1,9 @@
-package com.markvargas.discordbot.client.yahoo.service;
+package com.markvargas.discordbot.jobs;
 
+import com.markvargas.discordbot.client.discord.service.DiscordService;
+import com.markvargas.discordbot.client.yahoo.service.YahooService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.annotation.Schedules;
@@ -11,6 +14,8 @@ import org.springframework.stereotype.Component;
 public class ScheduledJobs {
 
   @Autowired private YahooService yahooService;
+
+  @Autowired private DiscordService discordService;
 
   @Scheduled(fixedRate = 600_000)
   public void getAuthTokenJob() {
@@ -23,7 +28,11 @@ public class ScheduledJobs {
   public void getMatchupsJob() {
     log.info("Scheduled job for getting matchups running...");
     String matchups = yahooService.getMatchups();
-    log.info(matchups);
+    if (StringUtils.isEmpty(matchups)) {
+      log.warn("Message not posted as it was empty");
+    } else {
+      discordService.createMessage(matchups);
+    }
   }
 
   @Schedules({
@@ -34,34 +43,54 @@ public class ScheduledJobs {
   public void getScoreUpdatesJob() {
     log.info("Scheduled job for getting score updates running...");
     String scoreUpdates = yahooService.getScoreUpdates(false);
-    log.info(scoreUpdates);
+    if (StringUtils.isEmpty(scoreUpdates)) {
+      log.warn("Message not posted as it was empty");
+    } else {
+      discordService.createMessage(scoreUpdates);
+    }
   }
 
   @Scheduled(cron = "0 30 7 * * 2", zone = "America/New_York")
   public void getFinalScoreUpdateJob() {
     log.info("Scheduled job for getting final score update running...");
     String scoreUpdates = yahooService.getScoreUpdates(true);
-    log.info(scoreUpdates);
+    if (StringUtils.isEmpty(scoreUpdates)) {
+      log.warn("Message not posted as it was empty");
+    } else {
+      discordService.createMessage(scoreUpdates);
+    }
   }
 
   @Scheduled(cron = "0 30 7 * * 3", zone = "America/New_York")
   public void getStandingsJob() {
     log.info("Scheduled job for getting standings running...");
     String standings = yahooService.getStandings();
-    log.info(standings);
+    if (StringUtils.isEmpty(standings)) {
+      log.warn("Message not posted as it was empty");
+    } else {
+      discordService.createMessage(standings);
+    }
   }
 
   @Scheduled(cron = "0 30 18 * * 1", zone = "America/New_York")
   public void getCloseScores() {
     log.info("Scheduled job for getting standings running...");
     String closeScores = yahooService.getCloseScores();
-    log.info(closeScores);
+    if (StringUtils.isEmpty(closeScores)) {
+      log.warn("Message not posted as it was empty");
+    } else {
+      discordService.createMessage(closeScores);
+    }
   }
 
   @Scheduled(cron = "0 30 7 * * 0", zone = "America/New_York")
   public void getPlayersToMonitorJob() {
     log.info("Scheduled job for getting players to monitor running...");
     String playersToMonitor = yahooService.getPlayersToMonitor();
-    log.info(playersToMonitor);
+    if (StringUtils.isEmpty(playersToMonitor)) {
+      log.warn("Message not posted as it was empty");
+    } else {
+      discordService.createMessage(playersToMonitor);
+    }
   }
 }

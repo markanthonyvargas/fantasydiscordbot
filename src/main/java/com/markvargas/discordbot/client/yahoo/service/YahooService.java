@@ -128,7 +128,7 @@ public class YahooService {
             .append(team2.getName())
             .append("\n");
       }
-      return matchups + "\n\n" + projectedScores;
+      return matchups + "\n" + projectedScores;
     } catch (Exception e) {
       log.error("Could not get matchups due to", e);
       return "";

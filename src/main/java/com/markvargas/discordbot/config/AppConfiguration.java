@@ -13,4 +13,10 @@ public class AppConfiguration {
   public RestTemplate yahooRestTemplate() {
     return new RestTemplate();
   }
+
+  @Bean
+  @Qualifier("discordRestTemplate")
+  public RestTemplate discordRestTemplate() {
+    return new RestTemplate();
+  }
 }
