@@ -12,4 +12,5 @@ public class Player {
   private String status_full;
   private String display_position;
   private TransactionData transaction_data;
+  private int is_editable;
 }

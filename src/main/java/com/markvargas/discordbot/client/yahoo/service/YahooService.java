@@ -303,6 +303,7 @@ public class YahooService {
         for (Player player : team.getRoster().getPlayers()) {
           if (!player.getSelected_position().getPosition().equals("BN")
               && !player.getSelected_position().getPosition().equals("IR")
+              && player.getIs_editable() != 0
               && !StringUtils.isEmpty(player.getStatus_full())) {
             injuredPlayers.add(player);
           }
