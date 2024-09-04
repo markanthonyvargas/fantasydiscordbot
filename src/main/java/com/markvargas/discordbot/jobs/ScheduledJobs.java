@@ -93,4 +93,15 @@ public class ScheduledJobs {
       discordService.createMessage(playersToMonitor);
     }
   }
+
+  @Scheduled(cron = "0 30 7 * * *", zone = "America/New_York")
+  public void getWaiverReport() {
+    log.info("Scheduled job for getting waiver report running...");
+    String waiverReport = yahooService.getWaiverTransactions();
+    if (StringUtils.isEmpty(waiverReport)) {
+      log.warn("Message not posted as it was empty");
+    } else {
+      discordService.createMessage(waiverReport);
+    }
+  }
 }

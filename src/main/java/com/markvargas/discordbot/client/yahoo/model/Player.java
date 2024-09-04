@@ -10,4 +10,6 @@ public class Player {
   private Name name;
   private SelectedPosition selected_position;
   private String status_full;
+  private String display_position;
+  private TransactionData transaction_data;
 }

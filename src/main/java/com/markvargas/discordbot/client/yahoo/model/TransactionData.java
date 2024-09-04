@@ -5,11 +5,8 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class League {
-
-  private Scoreboard scoreboard;
-
-  private Standings standings;
-
-  private Transaction[] transactions;
+public class TransactionData {
+  private String type;
+  private String source_type;
+  private String destination_team_name;
 }

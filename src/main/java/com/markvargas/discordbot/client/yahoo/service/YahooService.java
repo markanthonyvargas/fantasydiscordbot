@@ -5,11 +5,13 @@ import com.markvargas.discordbot.client.yahoo.model.FantasyContent;
 import com.markvargas.discordbot.client.yahoo.model.Matchup;
 import com.markvargas.discordbot.client.yahoo.model.Player;
 import com.markvargas.discordbot.client.yahoo.model.Team;
+import com.markvargas.discordbot.client.yahoo.model.Transaction;
 import com.markvargas.discordbot.client.yahoo.model.YahooAuthToken;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Scanner;
 import lombok.extern.slf4j.Slf4j;
@@ -322,6 +324,52 @@ public class YahooService {
       return playersToMonitor.toString();
     } catch (Exception e) {
       log.error("Could not get rosters due to", e);
+      return "";
+    }
+  }
+
+  public String getWaiverTransactions() {
+    String url =
+        "https://fantasysports.yahooapis.com/fantasy/v2/leagues;league_keys=449.l."
+            + leagueId
+            + "/transactions;type=add";
+    HttpHeaders headers = new HttpHeaders();
+    headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + getAuthToken());
+    HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+    try {
+      log.info("Attempting to get score updates");
+      ResponseEntity<String> response =
+          yahooRestTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+      XmlMapper xmlMapper = new XmlMapper();
+      FantasyContent fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
+      StringBuilder sb = new StringBuilder();
+      sb.append("Waiver Report:").append("\n");
+      for (Transaction transaction : fantasyContent.getLeagues()[0].getTransactions()) {
+        long timestampMillis = transaction.getTimestamp() * 1000;
+        Calendar today = Calendar.getInstance();
+        Calendar timestamp = Calendar.getInstance();
+        timestamp.setTimeInMillis(timestampMillis);
+        if (today.get(Calendar.DAY_OF_YEAR) == timestamp.get(Calendar.DAY_OF_YEAR)) {
+          Player[] players = transaction.getPlayers();
+          if (players[0].getTransaction_data().getSource_type().equals("waivers")) {
+            String teamName = players[0].getTransaction_data().getDestination_team_name();
+            sb.append(teamName).append("\n");
+            for (Player player : players) {
+              sb.append(
+                      player.getTransaction_data().getType().equals("add") ? "ADDED " : "DROPPED ")
+                  .append(player.getDisplay_position())
+                  .append(" ")
+                  .append(player.getName().getFull())
+                  .append("\n");
+            }
+            sb.append("\n");
+          }
+        }
+      }
+      return sb.toString();
+    } catch (Exception e) {
+      log.error("Could not get waiver report due to", e);
       return "";
     }
   }
