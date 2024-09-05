@@ -8,8 +8,6 @@ import lombok.Data;
 public class League {
 
   private Scoreboard scoreboard;
-
   private Standings standings;
-
   private Transaction[] transactions;
 }

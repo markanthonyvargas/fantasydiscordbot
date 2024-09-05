@@ -339,7 +339,7 @@ public class YahooService {
     HttpEntity<Void> entity = new HttpEntity<>(headers);
 
     try {
-      log.info("Attempting to get score updates");
+      log.info("Attempting to get waiver report");
       ResponseEntity<String> response =
           yahooRestTemplate.exchange(url, HttpMethod.GET, entity, String.class);
       XmlMapper xmlMapper = new XmlMapper();

@@ -9,17 +9,8 @@ public class Team {
 
   private String team_key;
   private String name;
-
   private TeamPoints team_points;
-
   private TeamProjectedPoints team_projected_points;
-
   private TeamStandings team_standings;
-
   private Roster roster;
-
-  @Override
-  public String toString() {
-    return this.name;
-  }
 }
