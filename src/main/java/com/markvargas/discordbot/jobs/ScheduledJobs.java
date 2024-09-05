@@ -74,10 +74,12 @@ public class ScheduledJobs {
 
   @Scheduled(cron = "0 30 18 * * 1", zone = "America/New_York")
   public void getCloseScores() {
-    log.info("Scheduled job for getting standings running...");
+    log.info("Scheduled job for getting close scores running...");
     String closeScores = yahooService.getCloseScores();
     if (StringUtils.isEmpty(closeScores)) {
       log.warn("Message not posted as it was empty");
+    } else if (closeScores.equals("Close Projected Scores\n")) {
+      log.info("No matchups are projected to finish less than 15 points, message won't be posted");
     } else {
       discordService.createMessage(closeScores);
     }

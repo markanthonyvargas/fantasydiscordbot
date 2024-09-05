@@ -191,7 +191,7 @@ public class YahooService {
     HttpEntity<Void> entity = new HttpEntity<>(headers);
 
     try {
-      log.info("Attempting to get score updates");
+      log.info("Attempting to get standings");
       ResponseEntity<String> response =
           yahooRestTemplate.exchange(url, HttpMethod.GET, entity, String.class);
       XmlMapper xmlMapper = new XmlMapper();
@@ -233,18 +233,22 @@ public class YahooService {
       XmlMapper xmlMapper = new XmlMapper();
       FantasyContent fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
       StringBuilder closeScores = new StringBuilder();
-      closeScores.append("Close Scores\n");
+      closeScores.append("Close Projected Scores\n");
       for (Matchup matchup : fantasyContent.getLeague().getScoreboard().getMatchups()) {
         Team team1 = matchup.getTeams()[0];
         Team team2 = matchup.getTeams()[1];
-        if (Math.abs(team1.getTeam_points().getTotal() - team2.getTeam_points().getTotal())
-            <= 15.0) {
+        if (Math.abs(
+                    team1.getTeam_projected_points().getTotal()
+                        - team2.getTeam_projected_points().getTotal())
+                <= 15
+            && team1.getWin_probability() != 0.00
+            && team1.getWin_probability() != 1.00) {
           closeScores
               .append(team1.getName())
               .append(" ")
-              .append(team1.getTeam_points().getTotal())
+              .append(team1.getTeam_projected_points().getTotal())
               .append(" - ")
-              .append(team2.getTeam_points().getTotal())
+              .append(team2.getTeam_projected_points().getTotal())
               .append(" ")
               .append(team2.getName())
               .append("\n");
