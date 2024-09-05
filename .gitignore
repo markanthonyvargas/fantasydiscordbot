@@ -34,3 +34,6 @@ build/
 
 ### token file ###
 token.txt
+
+### log files ###
+*.log
