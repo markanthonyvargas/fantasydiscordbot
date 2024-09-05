@@ -69,7 +69,7 @@ public class YahooService {
       YahooAuthToken authToken =
           yahooRestTemplate.postForObject(authUrl, request, YahooAuthToken.class);
       log.info("Yahoo access token retrieval successful");
-      File tokenFile = new File("token.txt");
+      File tokenFile = new File("./app/token.txt");
       if (tokenFile.createNewFile()) {
         log.info("File created: {}", tokenFile.getName());
       } else {
@@ -86,7 +86,7 @@ public class YahooService {
   public String getAuthToken() {
     StringBuilder token = new StringBuilder();
     try {
-      File file = new File("token.txt");
+      File file = new File("./app/token.txt");
       Scanner scanner = new Scanner(file);
       while (scanner.hasNextLine()) {
         token.append(scanner.nextLine());
