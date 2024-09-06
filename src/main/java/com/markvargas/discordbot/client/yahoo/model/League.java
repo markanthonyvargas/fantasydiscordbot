@@ -10,4 +10,5 @@ public class League {
   private Scoreboard scoreboard;
   private Standings standings;
   private Transaction[] transactions;
+  private Team[] teams;
 }

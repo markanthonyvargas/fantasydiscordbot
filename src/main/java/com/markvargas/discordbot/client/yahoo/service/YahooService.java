@@ -233,22 +233,19 @@ public class YahooService {
       XmlMapper xmlMapper = new XmlMapper();
       FantasyContent fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
       StringBuilder closeScores = new StringBuilder();
-      closeScores.append("Close Projected Scores\n");
+      closeScores.append("Close Scores\n");
       for (Matchup matchup : fantasyContent.getLeague().getScoreboard().getMatchups()) {
         Team team1 = matchup.getTeams()[0];
         Team team2 = matchup.getTeams()[1];
-        if (Math.abs(
-                    team1.getTeam_projected_points().getTotal()
-                        - team2.getTeam_projected_points().getTotal())
-                <= 15
+        if (Math.abs(team1.getTeam_points().getTotal() - team2.getTeam_points().getTotal()) <= 15
             && team1.getWin_probability() != 0.00
             && team1.getWin_probability() != 1.00) {
           closeScores
               .append(team1.getName())
               .append(" ")
-              .append(team1.getTeam_projected_points().getTotal())
+              .append(team1.getTeam_points().getTotal())
               .append(" - ")
-              .append(team2.getTeam_projected_points().getTotal())
+              .append(team2.getTeam_points().getTotal())
               .append(" ")
               .append(team2.getName())
               .append("\n");
@@ -262,33 +259,7 @@ public class YahooService {
   }
 
   public String getPlayersToMonitor() {
-    String fullLeagueId = "449.l." + leagueId;
-    String uri =
-        "teams;team_keys="
-            + fullLeagueId
-            + ".t.1,"
-            + fullLeagueId
-            + ".t.2,"
-            + fullLeagueId
-            + ".t.3,"
-            + fullLeagueId
-            + ".t.4,"
-            + fullLeagueId
-            + ".t.5,"
-            + fullLeagueId
-            + ".t.6,"
-            + fullLeagueId
-            + ".t.7,"
-            + fullLeagueId
-            + ".t.8,"
-            + fullLeagueId
-            + ".t.9,"
-            + fullLeagueId
-            + ".t.10,"
-            + fullLeagueId
-            + ".t.11,"
-            + fullLeagueId
-            + ".t.12/roster";
+    String uri = "league/449.l." + leagueId + "/teams/roster";
     String url = "https://fantasysports.yahooapis.com/fantasy/v2/" + uri;
     HttpHeaders headers = new HttpHeaders();
     headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + getAuthToken());
@@ -302,12 +273,12 @@ public class YahooService {
       FantasyContent fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
       StringBuilder playersToMonitor = new StringBuilder();
       playersToMonitor.append("Starting Players to Monitor:\n");
-      for (Team team : fantasyContent.getTeams()) {
+      for (Team team : fantasyContent.getLeague().getTeams()) {
         List<Player> injuredPlayers = new ArrayList<>();
         for (Player player : team.getRoster().getPlayers()) {
           if (!player.getSelected_position().getPosition().equals("BN")
               && !player.getSelected_position().getPosition().equals("IR")
-              && player.getIs_editable() != 0
+              && player.getIs_editable() == 1
               && !StringUtils.isEmpty(player.getStatus_full())) {
             injuredPlayers.add(player);
           }

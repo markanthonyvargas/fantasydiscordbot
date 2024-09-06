@@ -38,7 +38,8 @@ public class ScheduledJobs {
   @Schedules({
     @Scheduled(cron = "0 0 16 * * 0", zone = "America/New_York"),
     @Scheduled(cron = "0 0 20 * * 0", zone = "America/New_York"),
-    @Scheduled(cron = "0 30 7 * * 1", zone = "America/New_York")
+    @Scheduled(cron = "0 30 7 * * 1", zone = "America/New_York"),
+    @Scheduled(cron = "0 30 7 * * 5", zone = "America/New_York")
   })
   public void getScoreUpdatesJob() {
     log.info("Scheduled job for getting score updates running...");
