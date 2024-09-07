@@ -11,4 +11,5 @@ public class League {
   private Standings standings;
   private Transaction[] transactions;
   private Team[] teams;
+  private int current_week;
 }

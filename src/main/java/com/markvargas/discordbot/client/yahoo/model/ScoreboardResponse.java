@@ -1,14 +1,11 @@
 package com.markvargas.discordbot.client.yahoo.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.util.HashMap;
 import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Scoreboard {
+public class ScoreboardResponse {
 
-  private int week;
-  private Matchup[] matchups;
-  private HashMap<String, Game> games;
+  private Service service;
 }

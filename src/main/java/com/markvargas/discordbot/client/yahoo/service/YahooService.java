@@ -2,8 +2,10 @@ package com.markvargas.discordbot.client.yahoo.service;
 
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.markvargas.discordbot.client.yahoo.model.FantasyContent;
+import com.markvargas.discordbot.client.yahoo.model.Game;
 import com.markvargas.discordbot.client.yahoo.model.Matchup;
 import com.markvargas.discordbot.client.yahoo.model.Player;
+import com.markvargas.discordbot.client.yahoo.model.ScoreboardResponse;
 import com.markvargas.discordbot.client.yahoo.model.Team;
 import com.markvargas.discordbot.client.yahoo.model.Transaction;
 import com.markvargas.discordbot.client.yahoo.model.YahooAuthToken;
@@ -13,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -271,6 +274,23 @@ public class YahooService {
           yahooRestTemplate.exchange(url, HttpMethod.GET, entity, String.class);
       XmlMapper xmlMapper = new XmlMapper();
       FantasyContent fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
+
+      String completedGamesUrl =
+          "https://api-secure.sports.yahoo.com/v1/editorial/s/scoreboard?lang=en-US&region=US&tz=America/Chicago&ysp_redesign=1&ysp_platform=desktop&leagues=nfl&week="
+              + fantasyContent.getLeague().getCurrent_week()
+              + "&season=current&sched_states=2&v=2&ysp_enable_last_update=0&include_last_play=0";
+      List<String> completedTeams = new ArrayList<>();
+      ResponseEntity<ScoreboardResponse> scoreboardResponseEntity =
+          yahooRestTemplate.exchange(
+              completedGamesUrl, HttpMethod.GET, null, ScoreboardResponse.class);
+      ScoreboardResponse scoreboardResponse = scoreboardResponseEntity.getBody();
+      for (Map.Entry<String, Game> entry :
+          scoreboardResponse.getService().getScoreboard().getGames().entrySet()) {
+        if (entry.getValue().getStatus_type().equals("status.type.final")) {
+          completedTeams.add(entry.getValue().getHome_team_id());
+          completedTeams.add(entry.getValue().getAway_team_id());
+        }
+      }
       StringBuilder playersToMonitor = new StringBuilder();
       playersToMonitor.append("Starting Players to Monitor:\n");
       for (Team team : fantasyContent.getLeague().getTeams()) {
@@ -278,7 +298,7 @@ public class YahooService {
         for (Player player : team.getRoster().getPlayers()) {
           if (!player.getSelected_position().getPosition().equals("BN")
               && !player.getSelected_position().getPosition().equals("IR")
-              && player.getIs_editable() == 1
+              && !completedTeams.contains(player.getEditorial_team_key())
               && !StringUtils.isEmpty(player.getStatus_full())) {
             injuredPlayers.add(player);
           }
