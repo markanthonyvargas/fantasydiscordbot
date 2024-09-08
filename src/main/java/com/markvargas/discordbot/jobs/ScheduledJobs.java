@@ -109,4 +109,15 @@ public class ScheduledJobs {
       discordService.createMessage(waiverReport);
     }
   }
+
+  @Scheduled(fixedRate = 3600_000, initialDelay = 1000)
+  public void getTrophiesJob() {
+    log.info("Scheduled job for getting trophies running...");
+    String trophies = yahooService.getTrophies();
+    if (StringUtils.isEmpty(trophies)) {
+      log.warn("Message not posted as it was empty");
+    } else {
+      discordService.createMessage(trophies);
+    }
+  }
 }

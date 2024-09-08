@@ -14,4 +14,8 @@ public class Team {
   private TeamStandings team_standings;
   private Roster roster;
   private double win_probability;
+
+  public String getName() {
+    return this.name.replace("_", "\\_");
+  }
 }

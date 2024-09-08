@@ -369,4 +369,79 @@ public class YahooService {
       return "";
     }
   }
+
+  public String getTrophies() {
+    String matchupsUrl =
+        "https://fantasysports.yahooapis.com/fantasy/v2/league/449.l." + leagueId + "/scoreboard";
+    HttpHeaders headers = new HttpHeaders();
+    headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + getAuthToken());
+    HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+    try {
+      log.info("Attemping to get trophy information");
+      ResponseEntity<String> matchupsResponseEntity =
+          yahooRestTemplate.exchange(matchupsUrl, HttpMethod.GET, entity, String.class);
+      XmlMapper xmlMapper = new XmlMapper();
+      FantasyContent fantasyContent =
+          xmlMapper.readValue(matchupsResponseEntity.getBody(), FantasyContent.class);
+      String weeklyScoresUrl =
+          "https://fantasysports.yahooapis.com/fantasy/v2/league/449.l.16001/teams/stats;type=week;week="
+              + fantasyContent.getLeague().getCurrent_week();
+      ResponseEntity<String> weeklyScoresResponseEntity =
+          yahooRestTemplate.exchange(weeklyScoresUrl, HttpMethod.GET, entity, String.class);
+      Team[] weeklyScoresByTeam =
+          xmlMapper
+              .readValue(weeklyScoresResponseEntity.getBody(), FantasyContent.class)
+              .getLeague().getTeams();
+      StringBuilder sb = new StringBuilder();
+      sb.append("Trophies of the week:\n");
+      Matchup[] matchups = fantasyContent.getLeague().getScoreboard().getMatchups();
+      Map<String, Team> highAndLowScores = TrophyHelper.getHighAndLowScores(matchups);
+      sb.append(":crown: High score :crown:\n")
+          .append(highAndLowScores.get("highScore").getName())
+          .append(" with ")
+          .append(highAndLowScores.get("highScore").getTeam_points().getTotal())
+          .append(" points\n");
+      sb.append(":poop: Low score :poop:\n")
+          .append(highAndLowScores.get("lowScore").getName())
+          .append(" with ")
+          .append(highAndLowScores.get("lowScore").getTeam_points().getTotal())
+          .append(" points\n");
+
+      Map<String, Team> blowoutTeams = TrophyHelper.getBlowout(matchups);
+      sb.append(":scream: Blow out :scream:\n")
+          .append(blowoutTeams.get("winningTeam").getName())
+          .append(" blew out ")
+          .append(blowoutTeams.get("losingTeam").getName())
+          .append(" by ")
+          .append(
+              blowoutTeams.get("winningTeam").getTeam_points().getTotal()
+                  - blowoutTeams.get("losingTeam").getTeam_points().getTotal())
+          .append(" points\n");
+
+      Map<String, Team> closeWinTeams = TrophyHelper.getCloseWin(matchups);
+      sb.append(":sweat_smile: Close win :sweat_smile:\n")
+          .append(closeWinTeams.get("winningTeam").getName())
+          .append(" barely beat ")
+          .append(closeWinTeams.get("losingTeam").getName())
+          .append(" by ")
+          .append(
+              closeWinTeams.get("winningTeam").getTeam_points().getTotal()
+                  - closeWinTeams.get("losingTeam").getTeam_points().getTotal())
+          .append(" points\n");
+
+      String[] luckyTeam = TrophyHelper.getLuckyTeam(weeklyScoresByTeam);
+      sb.append(":four_leaf_clover: Lucky :four_leaf_clover:\n")
+          .append(luckyTeam[0])
+          .append(" was ")
+          .append(luckyTeam[1])
+          .append("-")
+          .append(11 - Integer.parseInt(luckyTeam[1]))
+          .append(" against the league, but still got the win\n");
+      return sb.toString();
+    } catch (Exception e) {
+      log.error("Could not get trophies due to", e);
+      return "";
+    }
+  }
 }

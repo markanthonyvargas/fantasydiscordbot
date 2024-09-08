@@ -33,7 +33,7 @@ public class DiscordService {
     headers.add(HttpHeaders.AUTHORIZATION, "Bot " + botToken);
     headers.add(HttpHeaders.USER_AGENT, "DiscordBot (fantasydiscordbot.onrender.com, 1");
     headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-    DiscordMessageRequest messageRequest = new DiscordMessageRequest(formatMessage(message));
+    DiscordMessageRequest messageRequest = new DiscordMessageRequest(message);
     HttpEntity<DiscordMessageRequest> entity = new HttpEntity<>(messageRequest, headers);
     try {
       log.info("Attempting to post message to Discord channel");
@@ -49,9 +49,5 @@ public class DiscordService {
     } catch (Exception e) {
       log.error("Error occurred while attempting to post a message to Discord channel", e);
     }
-  }
-
-  private String formatMessage(String message) {
-    return message.replace("_", "\\_");
   }
 }
