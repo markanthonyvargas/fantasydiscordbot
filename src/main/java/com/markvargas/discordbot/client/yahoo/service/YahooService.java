@@ -11,6 +11,7 @@ import com.markvargas.discordbot.client.yahoo.model.Transaction;
 import com.markvargas.discordbot.client.yahoo.model.YahooAuthToken;
 import java.io.File;
 import java.io.FileWriter;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Calendar;
@@ -53,6 +54,8 @@ public class YahooService {
   @Value("${redirecUri")
   private String redirectUri;
 
+  private static final DecimalFormat df = new DecimalFormat("0.00");
+
   public void saveAuthToken() {
     String authUrl = "https://api.login.yahoo.com/oauth2/get_token";
     String requestBody =
@@ -86,7 +89,7 @@ public class YahooService {
     }
   }
 
-  public String getAuthToken() {
+  public static String getAuthToken() {
     StringBuilder token = new StringBuilder();
     try {
       File file = new File("./app/token.txt");
@@ -378,7 +381,7 @@ public class YahooService {
     HttpEntity<Void> entity = new HttpEntity<>(headers);
 
     try {
-      log.info("Attemping to get trophy information");
+      log.info("Attempting to get trophy information");
       ResponseEntity<String> matchupsResponseEntity =
           yahooRestTemplate.exchange(matchupsUrl, HttpMethod.GET, entity, String.class);
       XmlMapper xmlMapper = new XmlMapper();
@@ -392,7 +395,19 @@ public class YahooService {
       Team[] weeklyScoresByTeam =
           xmlMapper
               .readValue(weeklyScoresResponseEntity.getBody(), FantasyContent.class)
-              .getLeague().getTeams();
+              .getLeague()
+              .getTeams();
+      String weeklyRosterUrl =
+          "https://fantasysports.yahooapis.com/fantasy/v2/league/449.l."
+              + leagueId
+              + "/teams/roster";
+      ResponseEntity<String> weeklyRosterEntity =
+          yahooRestTemplate.exchange(weeklyRosterUrl, HttpMethod.GET, entity, String.class);
+      Team[] weeklyRosters =
+          xmlMapper
+              .readValue(weeklyRosterEntity.getBody(), FantasyContent.class)
+              .getLeague()
+              .getTeams();
       StringBuilder sb = new StringBuilder();
       sb.append("Trophies of the week:\n");
       Matchup[] matchups = fantasyContent.getLeague().getScoreboard().getMatchups();
@@ -415,8 +430,9 @@ public class YahooService {
           .append(blowoutTeams.get("losingTeam").getName())
           .append(" by ")
           .append(
-              blowoutTeams.get("winningTeam").getTeam_points().getTotal()
-                  - blowoutTeams.get("losingTeam").getTeam_points().getTotal())
+              df.format(
+                  blowoutTeams.get("winningTeam").getTeam_points().getTotal()
+                      - blowoutTeams.get("losingTeam").getTeam_points().getTotal()))
           .append(" points\n");
 
       Map<String, Team> closeWinTeams = TrophyHelper.getCloseWin(matchups);
@@ -426,11 +442,12 @@ public class YahooService {
           .append(closeWinTeams.get("losingTeam").getName())
           .append(" by ")
           .append(
-              closeWinTeams.get("winningTeam").getTeam_points().getTotal()
-                  - closeWinTeams.get("losingTeam").getTeam_points().getTotal())
+              df.format(
+                  closeWinTeams.get("winningTeam").getTeam_points().getTotal()
+                      - closeWinTeams.get("losingTeam").getTeam_points().getTotal()))
           .append(" points\n");
 
-      String[] luckyTeam = TrophyHelper.getLuckyTeam(weeklyScoresByTeam);
+      String[] luckyTeam = TrophyHelper.getLuckyTeam(weeklyScoresByTeam, matchups);
       sb.append(":four_leaf_clover: Lucky :four_leaf_clover:\n")
           .append(luckyTeam[0])
           .append(" was ")
@@ -438,6 +455,60 @@ public class YahooService {
           .append("-")
           .append(11 - Integer.parseInt(luckyTeam[1]))
           .append(" against the league, but still got the win\n");
+
+      String[] unluckyTeam = TrophyHelper.getUnluckyTeam(weeklyScoresByTeam, matchups);
+      sb.append(":rage: Unlucky :rage:\n")
+          .append(unluckyTeam[0])
+          .append(" was ")
+          .append(unluckyTeam[1])
+          .append("-")
+          .append(11 - Integer.parseInt(unluckyTeam[1]))
+          .append(" against the league, but still took an L\n");
+
+      Team overachiever = TrophyHelper.getOverachiever(weeklyScoresByTeam);
+      if (overachiever != null) {
+        sb.append(":chart_with_upwards_trend: Overachiever :chart_with_upwards_trend:\n")
+            .append(overachiever.getName())
+            .append(" was ")
+            .append(
+                df.format(
+                    overachiever.getTeam_points().getTotal()
+                        - overachiever.getTeam_projected_points().getTotal()))
+            .append(" points over their projection\n");
+      }
+
+      Team underachiever = TrophyHelper.getUnderachiever(weeklyScoresByTeam);
+      if (underachiever != null) {
+        sb.append(":chart_with_downwards_trend: Underachiever :chart_with_downwards_trend:\n")
+            .append(underachiever.getName())
+            .append(" was ")
+            .append(
+                df.format(
+                    Math.abs(
+                        underachiever.getTeam_points().getTotal()
+                            - underachiever.getTeam_projected_points().getTotal())))
+            .append(" points under their projection\n");
+      }
+
+      String[] bestAndWorstManager =
+          TrophyHelper.getBestAndWorstManager(
+              weeklyRosters,
+              weeklyScoresByTeam,
+              fantasyContent.getLeague().getCurrent_week(),
+              leagueId);
+      sb.append(":robot: Best Manager :robot:\n")
+          .append(bestAndWorstManager[0])
+          .append(" scored ")
+          .append(df.format(Double.parseDouble(bestAndWorstManager[1])))
+          .append("% of their optimal score!\n");
+      sb.append(":clown: WorstManager :clown:\n")
+          .append(bestAndWorstManager[2])
+          .append(" left ")
+          .append(df.format(Double.parseDouble(bestAndWorstManager[4])))
+          .append(" points on their bench. Only scoring ")
+          .append(df.format(Double.parseDouble(bestAndWorstManager[3])))
+          .append("% of their optimal score.");
+
       return sb.toString();
     } catch (Exception e) {
       log.error("Could not get trophies due to", e);

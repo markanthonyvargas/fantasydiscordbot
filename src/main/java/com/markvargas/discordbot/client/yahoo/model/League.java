@@ -12,4 +12,5 @@ public class League {
   private Transaction[] transactions;
   private Team[] teams;
   private int current_week;
+  private Player[] players;
 }

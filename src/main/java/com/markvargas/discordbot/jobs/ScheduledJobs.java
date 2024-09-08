@@ -110,7 +110,7 @@ public class ScheduledJobs {
     }
   }
 
-  @Scheduled(fixedRate = 3600_000, initialDelay = 1000)
+  @Scheduled(cron = "0 30 7 * * 2", zone = "America/New_York")
   public void getTrophiesJob() {
     log.info("Scheduled job for getting trophies running...");
     String trophies = yahooService.getTrophies();
