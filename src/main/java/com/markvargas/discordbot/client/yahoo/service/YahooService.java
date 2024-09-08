@@ -501,7 +501,7 @@ public class YahooService {
           .append(" scored ")
           .append(df.format(Double.parseDouble(bestAndWorstManager[1])))
           .append("% of their optimal score!\n");
-      sb.append(":clown: WorstManager :clown:\n")
+      sb.append(":clown: Worst Manager :clown:\n")
           .append(bestAndWorstManager[2])
           .append(" left ")
           .append(df.format(Double.parseDouble(bestAndWorstManager[4])))
