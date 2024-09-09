@@ -182,7 +182,7 @@ public class YahooService {
             .append(team2.getName())
             .append("\n");
       }
-      return currentPoints + "\n" + (isFinalUpdate ? "" : projectedPoints);
+      return currentPoints + "\n" + (isFinalUpdate ? "" : projectedPoints.toString());
     } catch (Exception e) {
       log.error("Could not get score updates due to", e);
       return "";
@@ -221,45 +221,6 @@ public class YahooService {
       return sb.toString();
     } catch (Exception e) {
       log.error("Could not get standings due to", e);
-      return "";
-    }
-  }
-
-  public String getCloseScores() {
-    String url =
-        "https://fantasysports.yahooapis.com/fantasy/v2/league/449.l." + leagueId + "/scoreboard";
-    HttpHeaders headers = new HttpHeaders();
-    headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + getAuthToken());
-    HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-    try {
-      log.info("Attempting to get close scores");
-      ResponseEntity<String> response =
-          yahooRestTemplate.exchange(url, HttpMethod.GET, entity, String.class);
-      XmlMapper xmlMapper = new XmlMapper();
-      FantasyContent fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
-      StringBuilder closeScores = new StringBuilder();
-      closeScores.append("Close Scores\n");
-      for (Matchup matchup : fantasyContent.getLeague().getScoreboard().getMatchups()) {
-        Team team1 = matchup.getTeams()[0];
-        Team team2 = matchup.getTeams()[1];
-        if (Math.abs(team1.getTeam_points().getTotal() - team2.getTeam_points().getTotal()) <= 15
-            && team1.getWin_probability() != 0.00
-            && team1.getWin_probability() != 1.00) {
-          closeScores
-              .append(team1.getName())
-              .append(" ")
-              .append(team1.getTeam_points().getTotal())
-              .append(" - ")
-              .append(team2.getTeam_points().getTotal())
-              .append(" ")
-              .append(team2.getName())
-              .append("\n");
-        }
-      }
-      return closeScores.toString();
-    } catch (Exception e) {
-      log.error("Could not get close scores due to", e);
       return "";
     }
   }
