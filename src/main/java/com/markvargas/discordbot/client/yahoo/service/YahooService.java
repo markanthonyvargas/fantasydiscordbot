@@ -157,6 +157,11 @@ public class YahooService {
       XmlMapper xmlMapper = new XmlMapper();
       FantasyContent fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
       StringBuilder currentPoints = new StringBuilder();
+      if (isFinalUpdate) {
+        url += ";type=week;week=" + (fantasyContent.getLeague().getCurrent_week() - 1);
+        response = yahooRestTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+        fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
+      }
       currentPoints.append(isFinalUpdate ? "Final Score Update" : "Score Update").append("\n");
       StringBuilder projectedPoints = new StringBuilder();
       projectedPoints.append("Approximate Projected Scores").append("\n");
@@ -348,9 +353,13 @@ public class YahooService {
       XmlMapper xmlMapper = new XmlMapper();
       FantasyContent fantasyContent =
           xmlMapper.readValue(matchupsResponseEntity.getBody(), FantasyContent.class);
+      matchupsUrl += ";type=week;week=" + (fantasyContent.getLeague().getCurrent_week() - 1);
+      matchupsResponseEntity =
+          yahooRestTemplate.exchange(matchupsUrl, HttpMethod.GET, entity, String.class);
+      fantasyContent = xmlMapper.readValue(matchupsResponseEntity.getBody(), FantasyContent.class);
       String weeklyScoresUrl =
           "https://fantasysports.yahooapis.com/fantasy/v2/league/449.l.16001/teams/stats;type=week;week="
-              + fantasyContent.getLeague().getCurrent_week();
+              + (fantasyContent.getLeague().getCurrent_week() - 1);
       ResponseEntity<String> weeklyScoresResponseEntity =
           yahooRestTemplate.exchange(weeklyScoresUrl, HttpMethod.GET, entity, String.class);
       Team[] weeklyScoresByTeam =
@@ -455,7 +464,7 @@ public class YahooService {
           TrophyHelper.getBestAndWorstManager(
               weeklyRosters,
               weeklyScoresByTeam,
-              fantasyContent.getLeague().getCurrent_week(),
+              fantasyContent.getLeague().getCurrent_week() - 1,
               leagueId);
       sb.append(":robot: Best Manager :robot:\n")
           .append(bestAndWorstManager[0])

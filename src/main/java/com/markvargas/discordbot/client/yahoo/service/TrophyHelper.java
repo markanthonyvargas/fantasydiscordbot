@@ -179,6 +179,8 @@ public class TrophyHelper {
       if (team.getTeam_points().getTotal() - team.getTeam_projected_points().getTotal()
           > pointsOverProjection) {
         overachiever = team;
+        pointsOverProjection =
+            team.getTeam_points().getTotal() - team.getTeam_projected_points().getTotal();
       }
     }
 
@@ -193,6 +195,8 @@ public class TrophyHelper {
       if (team.getTeam_points().getTotal() - team.getTeam_projected_points().getTotal()
           < pointsOverProjection) {
         underachiever = team;
+        pointsOverProjection =
+            team.getTeam_points().getTotal() - team.getTeam_projected_points().getTotal();
       }
     }
 
