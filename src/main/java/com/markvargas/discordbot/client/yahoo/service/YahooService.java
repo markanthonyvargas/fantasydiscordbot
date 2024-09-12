@@ -162,9 +162,9 @@ public class YahooService {
         response = yahooRestTemplate.exchange(url, HttpMethod.GET, entity, String.class);
         fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
       }
-      currentPoints.append(isFinalUpdate ? "Final Score Update" : "Score Update").append("\n");
+      currentPoints.append(isFinalUpdate ? "**Final Score Update**" : "**Score Update**").append("\n");
       StringBuilder projectedPoints = new StringBuilder();
-      projectedPoints.append("Approximate Projected Scores").append("\n");
+      projectedPoints.append("**Approximate Projected Scores**").append("\n");
       for (Matchup matchup : fantasyContent.getLeague().getScoreboard().getMatchups()) {
         Team team1 = matchup.getTeams()[0];
         Team team2 = matchup.getTeams()[1];
@@ -208,7 +208,7 @@ public class YahooService {
       XmlMapper xmlMapper = new XmlMapper();
       FantasyContent fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
       StringBuilder sb = new StringBuilder();
-      sb.append("Current Standings:").append("\n");
+      sb.append("**Current Standings:**").append("\n");
       int rank = 1;
       for (Team team : fantasyContent.getLeague().getStandings().getTeams()) {
         sb.append(rank)
@@ -261,7 +261,7 @@ public class YahooService {
         }
       }
       StringBuilder playersToMonitor = new StringBuilder();
-      playersToMonitor.append("Starting Players to Monitor:\n");
+      playersToMonitor.append("**Starting Players to Monitor**:\n");
       for (Team team : fantasyContent.getLeague().getTeams()) {
         List<Player> injuredPlayers = new ArrayList<>();
         for (Player player : team.getRoster().getPlayers()) {
@@ -309,7 +309,7 @@ public class YahooService {
       XmlMapper xmlMapper = new XmlMapper();
       FantasyContent fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
       StringBuilder sb = new StringBuilder();
-      sb.append("Waiver Report:").append("\n");
+      sb.append("**Waiver Report:**").append("\n");
       for (Transaction transaction : fantasyContent.getLeagues()[0].getTransactions()) {
         long timestampMillis = transaction.getTimestamp() * 1000;
         Calendar today = Calendar.getInstance();
@@ -379,7 +379,7 @@ public class YahooService {
               .getLeague()
               .getTeams();
       StringBuilder sb = new StringBuilder();
-      sb.append("Trophies of the week:\n");
+      sb.append("**Trophies of the week:**\n");
       Matchup[] matchups = fantasyContent.getLeague().getScoreboard().getMatchups();
       Map<String, Team> highAndLowScores = TrophyHelper.getHighAndLowScores(matchups);
       sb.append(":crown: High score :crown:\n")
