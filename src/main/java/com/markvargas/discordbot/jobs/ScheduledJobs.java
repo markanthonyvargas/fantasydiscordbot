@@ -90,7 +90,7 @@ public class ScheduledJobs {
     String waiverReport = yahooService.getWaiverTransactions();
     if (StringUtils.isEmpty(waiverReport)) {
       log.warn("Message not posted as it was empty");
-    } else if (waiverReport.equals("Waiver Report:\n")) {
+    } else if (waiverReport.equals("**Waiver Report:**\n")) {
       log.info("No waiver transactions processed today, message won't be posted");
     } else {
       discordService.createMessage(waiverReport);
