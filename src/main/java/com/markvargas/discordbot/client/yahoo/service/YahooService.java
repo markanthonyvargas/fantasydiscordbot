@@ -119,7 +119,7 @@ public class YahooService {
       XmlMapper xmlMapper = new XmlMapper();
       FantasyContent fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
       StringBuilder matchups = new StringBuilder();
-      matchups.append("Matchups\n");
+      matchups.append("**Matchups**\n");
       StringBuilder projectedScores = new StringBuilder();
       projectedScores.append("Approximate Projected Scores\n");
       for (Matchup matchup : fantasyContent.getLeague().getScoreboard().getMatchups()) {
