@@ -96,37 +96,21 @@ public class TrophyHelper {
   }
 
   public static String[] getLuckyTeam(Team[] teams, Matchup[] matchups) {
-    Map<String, Double> weeklyScores = new HashMap<>();
-    List<Team> winningTeams = new ArrayList<>();
+    List<String> winningTeams = new ArrayList<>();
 
     for (Matchup matchup : matchups) {
-      Team team1 = matchup.getTeams()[0];
-      Team team2 = matchup.getTeams()[1];
-
-      if (team1.getTeam_points().getTotal() > team2.getTeam_points().getTotal()) {
-        winningTeams.add(team1);
-      } else {
-        winningTeams.add(team2);
-      }
-    }
-
-    for (Team team : teams) {
-      weeklyScores.put(team.getName(), team.getTeam_points().getTotal());
+      winningTeams.add(matchup.getWinner_team_key());
     }
 
     Team luckyTeam = new Team();
-    int wins = 1000;
-    for (Team team : winningTeams) {
-      int teamWins = 0;
-      for (Map.Entry<String, Double> entry : weeklyScores.entrySet()) {
-        if (!team.getName().equals(entry.getKey())
-            && team.getTeam_points().getTotal() > entry.getValue()) {
-          teamWins++;
-        }
-      }
-      if (teamWins <= wins) {
-        luckyTeam = team;
-        wins = teamWins;
+    Arrays.sort(teams);
+    int wins = 0;
+
+    for (int i = 0; i < teams.length; i++) {
+      if (winningTeams.contains(teams[i].getTeam_key())) {
+        wins = i;
+        luckyTeam = teams[i];
+        break;
       }
     }
 
@@ -134,41 +118,26 @@ public class TrophyHelper {
   }
 
   public static String[] getUnluckyTeam(Team[] teams, Matchup[] matchups) {
-    Map<String, Double> weeklyScores = new HashMap<>();
-    List<Team> losingTeams = new ArrayList<>();
+    List<String> winningTeams = new ArrayList<>();
 
     for (Matchup matchup : matchups) {
-      Team team1 = matchup.getTeams()[0];
-      Team team2 = matchup.getTeams()[1];
-
-      if (team1.getTeam_points().getTotal() < team2.getTeam_points().getTotal()) {
-        losingTeams.add(team1);
-      } else {
-        losingTeams.add(team2);
-      }
+      winningTeams.add(matchup.getWinner_team_key());
     }
 
-    for (Team team : teams) {
-      weeklyScores.put(team.getName(), team.getTeam_points().getTotal());
-    }
-
-    Team luckyTeam = new Team();
+    Team unluckyTeam = new Team();
+    Arrays.sort(teams);
+    Collections.reverse(Arrays.asList(teams));
     int wins = 0;
-    for (Team team : losingTeams) {
-      int teamWins = 0;
-      for (Map.Entry<String, Double> entry : weeklyScores.entrySet()) {
-        if (!team.getName().equals(entry.getKey())
-            && team.getTeam_points().getTotal() > entry.getValue()) {
-          teamWins++;
-        }
-      }
-      if (teamWins >= wins) {
-        luckyTeam = team;
-        wins = teamWins;
+
+    for (int i = 0; i < teams.length; i++) {
+      if (!winningTeams.contains(teams[i].getTeam_key())) {
+        wins = 11 - i;
+        unluckyTeam = teams[i];
+        break;
       }
     }
 
-    return new String[] {luckyTeam.getName(), Integer.toString(wins)};
+    return new String[] {unluckyTeam.getName(), Integer.toString(wins)};
   }
 
   public static Team getOverachiever(Team[] teams) {

@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Team {
+public class Team implements Comparable<Team> {
 
   private String team_key;
   private String name;
@@ -17,5 +17,10 @@ public class Team {
 
   public String getName() {
     return this.name.replace("_", "\\_");
+  }
+
+  @Override
+  public int compareTo(Team b) {
+    return Double.compare(this.getTeam_points().getTotal(), b.getTeam_points().getTotal());
   }
 }

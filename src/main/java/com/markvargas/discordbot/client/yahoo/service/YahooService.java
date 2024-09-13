@@ -162,7 +162,9 @@ public class YahooService {
         response = yahooRestTemplate.exchange(url, HttpMethod.GET, entity, String.class);
         fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
       }
-      currentPoints.append(isFinalUpdate ? "**Final Score Update**" : "**Score Update**").append("\n");
+      currentPoints
+          .append(isFinalUpdate ? "**Final Score Update**" : "**Score Update**")
+          .append("\n");
       StringBuilder projectedPoints = new StringBuilder();
       projectedPoints.append("**Approximate Projected Scores**").append("\n");
       for (Matchup matchup : fantasyContent.getLeague().getScoreboard().getMatchups()) {

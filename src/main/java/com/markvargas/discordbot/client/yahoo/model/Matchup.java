@@ -8,4 +8,5 @@ import lombok.Data;
 public class Matchup {
 
   private Team[] teams;
+  private String winner_team_key;
 }
