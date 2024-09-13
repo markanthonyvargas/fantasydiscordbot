@@ -211,9 +211,8 @@ public class YahooService {
       FantasyContent fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
       StringBuilder sb = new StringBuilder();
       sb.append("**Current Standings:**").append("\n");
-      int rank = 1;
       for (Team team : fantasyContent.getLeague().getStandings().getTeams()) {
-        sb.append(rank)
+        sb.append(team.getTeam_standings().getRank())
             .append(":\t")
             .append(team.getName())
             .append(" (")
@@ -223,7 +222,6 @@ public class YahooService {
             .append(") ")
             .append(team.getTeam_standings().getPoints_for())
             .append("\n");
-        rank++;
       }
       return sb.toString();
     } catch (Exception e) {
