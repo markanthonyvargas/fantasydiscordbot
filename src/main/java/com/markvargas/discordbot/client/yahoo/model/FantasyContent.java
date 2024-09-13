@@ -8,6 +8,4 @@ import lombok.Data;
 public class FantasyContent {
 
   private League league;
-  private Team[] teams;
-  private League[] leagues;
 }

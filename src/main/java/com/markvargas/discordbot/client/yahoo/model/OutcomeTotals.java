@@ -7,6 +7,5 @@ public class OutcomeTotals {
 
   private int wins;
   private int losses;
-  private int ties;
   private double percentage;
 }
