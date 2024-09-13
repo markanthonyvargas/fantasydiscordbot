@@ -2,6 +2,7 @@ package com.markvargas.discordbot.jobs;
 
 import com.markvargas.discordbot.client.discord.service.DiscordService;
 import com.markvargas.discordbot.client.yahoo.service.YahooService;
+import javax.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +18,8 @@ public class ScheduledJobs {
 
   @Autowired private DiscordService discordService;
 
-  @Scheduled(fixedRate = 2700_000)
+  @PostConstruct
+  @Scheduled(cron = "0 */45 * * * *")
   public void getAuthTokenJob() {
     log.info("Fetching new access token");
     yahooService.saveAuthToken();
