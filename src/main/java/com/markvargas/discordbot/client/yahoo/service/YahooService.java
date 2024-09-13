@@ -381,7 +381,7 @@ public class YahooService {
       StringBuilder sb = new StringBuilder();
       sb.append("**Trophies of the week:**\n");
       Matchup[] matchups = fantasyContent.getLeague().getScoreboard().getMatchups();
-      Map<String, Team> highAndLowScores = TrophyHelper.getHighAndLowScores(matchups);
+      Map<String, Team> highAndLowScores = TrophyHelper.getHighAndLowScores(weeklyScoresByTeam);
       sb.append(":crown: High score :crown:\n")
           .append(highAndLowScores.get("highScore").getName())
           .append(" with ")

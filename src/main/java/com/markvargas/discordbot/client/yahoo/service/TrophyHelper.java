@@ -15,34 +15,11 @@ import org.springframework.web.client.RestTemplate;
 @Slf4j
 public class TrophyHelper {
 
-  public static Map<String, Team> getHighAndLowScores(Matchup[] matchups) {
+  public static Map<String, Team> getHighAndLowScores(Team[] teams) {
     Map<String, Team> teamAndScore = new HashMap<>();
-    Team highScoreTeam = new Team();
-    Team lowScoreTeam = new Team();
-    double highScore = 0;
-    double lowScore = 1000;
-    for (Matchup matchup : matchups) {
-      Team team1 = matchup.getTeams()[0];
-      Team team2 = matchup.getTeams()[1];
-      if (team1.getTeam_points().getTotal() >= highScore) {
-        highScoreTeam = team1;
-        highScore = team1.getTeam_points().getTotal();
-      }
-      if (team2.getTeam_points().getTotal() >= highScore) {
-        highScoreTeam = team2;
-        highScore = team2.getTeam_points().getTotal();
-      }
-      if (team1.getTeam_points().getTotal() <= lowScore) {
-        lowScoreTeam = team1;
-        lowScore = team1.getTeam_points().getTotal();
-      }
-      if (team2.getTeam_points().getTotal() <= lowScore) {
-        lowScoreTeam = team2;
-        lowScore = team2.getTeam_points().getTotal();
-      }
-    }
-    teamAndScore.put("highScore", highScoreTeam);
-    teamAndScore.put("lowScore", lowScoreTeam);
+    Arrays.sort(teams);
+    teamAndScore.put("highScore", teams[teams.length - 1]);
+    teamAndScore.put("lowScore", teams[0]);
     return teamAndScore;
   }
 
@@ -190,6 +167,8 @@ public class TrophyHelper {
     double worstPointPercentage = 1000.0;
     double worstPointDifference = 0.0;
     int index = 0;
+    XmlMapper xmlMapper = new XmlMapper();
+    RestTemplate yahooRestTemplate = new RestTemplate();
 
     for (Team team : teams) {
       Player[] players = team.getRoster().getPlayers();
@@ -201,10 +180,8 @@ public class TrophyHelper {
       String playerKeys = sb.toString();
       playerKeys = playerKeys.substring(0, playerKeys.length() - 1);
       String finalUrl = getPlayerWeekStatsUrl + playerKeys + getPlayerWeekStatsUri;
-      RestTemplate yahooRestTemplate = new RestTemplate();
       ResponseEntity<String> responseEntity =
           yahooRestTemplate.exchange(finalUrl, HttpMethod.GET, entity, String.class);
-      XmlMapper xmlMapper = new XmlMapper();
       FantasyContent fantasyContent = null;
       try {
         fantasyContent = xmlMapper.readValue(responseEntity.getBody(), FantasyContent.class);
