@@ -121,7 +121,7 @@ public class YahooService {
       StringBuilder matchups = new StringBuilder();
       matchups.append("**Matchups**\n");
       StringBuilder projectedScores = new StringBuilder();
-      projectedScores.append("Approximate Projected Scores\n");
+      projectedScores.append("**Approximate Projected Scores**\n");
       for (Matchup matchup : fantasyContent.getLeague().getScoreboard().getMatchups()) {
         Team team1 = matchup.getTeams()[0];
         Team team2 = matchup.getTeams()[1];
