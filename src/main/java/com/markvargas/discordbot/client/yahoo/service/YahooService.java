@@ -165,8 +165,6 @@ public class YahooService {
       currentPoints
           .append(isFinalUpdate ? "**Final Score Update**" : "**Score Update**")
           .append("\n");
-      StringBuilder projectedPoints = new StringBuilder();
-      projectedPoints.append("**Approximate Projected Scores**").append("\n");
       for (Matchup matchup : fantasyContent.getLeague().getScoreboard().getMatchups()) {
         Team team1 = matchup.getTeams()[0];
         Team team2 = matchup.getTeams()[1];
@@ -179,17 +177,8 @@ public class YahooService {
             .append(" ")
             .append(team2.getName())
             .append("\n");
-        projectedPoints
-            .append(team1.getName())
-            .append(" ")
-            .append(team1.getTeam_projected_points())
-            .append(" - ")
-            .append(team2.getTeam_projected_points())
-            .append(" ")
-            .append(team2.getName())
-            .append("\n");
       }
-      return currentPoints + "\n" + (isFinalUpdate ? "" : projectedPoints.toString());
+      return currentPoints.toString();
     } catch (Exception e) {
       log.error("Could not get score updates due to", e);
       return "";
