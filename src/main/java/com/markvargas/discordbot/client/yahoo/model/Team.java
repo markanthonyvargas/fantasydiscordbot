@@ -13,7 +13,6 @@ public class Team implements Comparable<Team> {
   private TeamProjectedPoints team_projected_points;
   private TeamStandings team_standings;
   private Roster roster;
-  private double win_probability;
 
   public String getName() {
     return this.name.replace("_", "\\_");

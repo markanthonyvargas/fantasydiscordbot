@@ -8,7 +8,6 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Scoreboard {
 
-  private int week;
   private Matchup[] matchups;
   private HashMap<String, Game> games;
 }

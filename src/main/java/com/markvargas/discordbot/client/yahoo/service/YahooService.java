@@ -284,7 +284,7 @@ public class YahooService {
 
   public String getWaiverTransactions() {
     String url =
-        "https://fantasysports.yahooapis.com/fantasy/v2/leagues;league_keys=449.l."
+        "https://fantasysports.yahooapis.com/fantasy/v2/league/449.l."
             + leagueId
             + "/transactions;type=add";
     HttpHeaders headers = new HttpHeaders();
@@ -299,7 +299,7 @@ public class YahooService {
       FantasyContent fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
       StringBuilder sb = new StringBuilder();
       sb.append("**Waiver Report:**").append("\n");
-      for (Transaction transaction : fantasyContent.getLeagues()[0].getTransactions()) {
+      for (Transaction transaction : fantasyContent.getLeague().getTransactions()) {
         long timestampMillis = transaction.getTimestamp() * 1000;
         Calendar today = Calendar.getInstance();
         Calendar timestamp = Calendar.getInstance();
@@ -370,7 +370,7 @@ public class YahooService {
       StringBuilder sb = new StringBuilder();
       sb.append("**Trophies of the week:**\n");
       Matchup[] matchups = fantasyContent.getLeague().getScoreboard().getMatchups();
-      Map<String, Team> highAndLowScores = TrophyHelper.getHighAndLowScores(matchups);
+      Map<String, Team> highAndLowScores = TrophyHelper.getHighAndLowScores(weeklyScoresByTeam);
       sb.append(":crown: High score :crown:\n")
           .append(highAndLowScores.get("highScore").getName())
           .append(" with ")
