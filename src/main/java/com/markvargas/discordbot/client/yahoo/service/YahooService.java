@@ -29,6 +29,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
 
 @Service
@@ -38,6 +39,14 @@ public class YahooService {
   @Autowired
   @Qualifier("yahooRestTemplate")
   private RestTemplate yahooRestTemplate;
+
+  @Autowired
+  @Qualifier("yahooRestClient")
+  private RestClient yahooRestClient;
+
+  @Autowired
+  @Qualifier("yahooAuthTokenRestClient")
+  private RestClient yahooAuthTokenRestClient;
 
   @Value("${refreshToken}")
   private String refreshToken;
@@ -57,23 +66,16 @@ public class YahooService {
   private static final DecimalFormat df = new DecimalFormat("0.00");
 
   public void saveAuthToken() {
-    String authUrl = "https://api.login.yahoo.com/oauth2/get_token";
     String requestBody =
         "redirect_uri="
             + redirectUri
             + "&refresh_token="
             + refreshToken
             + "&grant_type=refresh_token";
-    HttpHeaders headers = new HttpHeaders();
-    headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE);
-    byte[] encodedClientCredentials =
-        Base64.getEncoder().encode((clientId + ":" + clientSecret).getBytes());
-    headers.add(HttpHeaders.AUTHORIZATION, "Basic " + new String(encodedClientCredentials));
-    HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
     try {
       log.info("Attempting to get access token from Yahoo...");
       YahooAuthToken authToken =
-          yahooRestTemplate.postForObject(authUrl, request, YahooAuthToken.class);
+          yahooAuthTokenRestClient.post().body(requestBody).retrieve().body(YahooAuthToken.class);
       log.info("Yahoo access token retrieval successful");
       File tokenFile = new File("./app/token.txt");
       if (tokenFile.createNewFile()) {
@@ -106,18 +108,13 @@ public class YahooService {
   }
 
   public String getMatchups() {
-    String url =
-        "https://fantasysports.yahooapis.com/fantasy/v2/league/449.l." + leagueId + "/scoreboard";
-    HttpHeaders headers = new HttpHeaders();
-    headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + getAuthToken());
-    HttpEntity<Void> entity = new HttpEntity<>(headers);
+    String uri = "/fantasy/v2/league/449.l." + leagueId + "/scoreboard";
 
     try {
       log.info("Attempting to get matchups");
-      ResponseEntity<String> response =
-          yahooRestTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+      String response = yahooRestClient.get().uri(uri).retrieve().body(String.class);
       XmlMapper xmlMapper = new XmlMapper();
-      FantasyContent fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
+      FantasyContent fantasyContent = xmlMapper.readValue(response, FantasyContent.class);
       StringBuilder matchups = new StringBuilder();
       matchups.append("**Matchups**\n");
       StringBuilder projectedScores = new StringBuilder();
