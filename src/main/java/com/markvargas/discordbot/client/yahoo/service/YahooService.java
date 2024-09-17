@@ -13,7 +13,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
@@ -23,22 +22,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestTemplate;
 
 @Service
 @Slf4j
 public class YahooService {
-
-  @Autowired
-  @Qualifier("yahooRestTemplate")
-  private RestTemplate yahooRestTemplate;
 
   @Autowired
   @Qualifier("yahooRestClient")
@@ -48,19 +38,15 @@ public class YahooService {
   @Qualifier("yahooAuthTokenRestClient")
   private RestClient yahooAuthTokenRestClient;
 
+  @Autowired private TrophyHelper trophyHelper;
+
   @Value("${refreshToken}")
   private String refreshToken;
-
-  @Value("${clientId}")
-  private String clientId;
-
-  @Value("${clientSecret}")
-  private String clientSecret;
 
   @Value("${leagueId}")
   private String leagueId;
 
-  @Value("${redirecUri")
+  @Value("${redirectUri}")
   private String redirectUri;
 
   private static final DecimalFormat df = new DecimalFormat("0.00");
@@ -93,6 +79,7 @@ public class YahooService {
 
   public static String getAuthToken() {
     StringBuilder token = new StringBuilder();
+    token.append("Bearer ");
     try {
       File file = new File("./app/token.txt");
       Scanner scanner = new Scanner(file);
@@ -112,7 +99,13 @@ public class YahooService {
 
     try {
       log.info("Attempting to get matchups");
-      String response = yahooRestClient.get().uri(uri).retrieve().body(String.class);
+      String response =
+          yahooRestClient
+              .get()
+              .uri(uri)
+              .header(HttpHeaders.AUTHORIZATION, getAuthToken())
+              .retrieve()
+              .body(String.class);
       XmlMapper xmlMapper = new XmlMapper();
       FantasyContent fantasyContent = xmlMapper.readValue(response, FantasyContent.class);
       StringBuilder matchups = new StringBuilder();
@@ -141,23 +134,30 @@ public class YahooService {
   }
 
   public String getScoreUpdates(boolean isFinalUpdate) {
-    String url =
-        "https://fantasysports.yahooapis.com/fantasy/v2/league/449.l." + leagueId + "/scoreboard";
-    HttpHeaders headers = new HttpHeaders();
-    headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + getAuthToken());
-    HttpEntity<Void> entity = new HttpEntity<>(headers);
+    String uri = "/fantasy/v2/league/449.l." + leagueId + "/scoreboard";
 
     try {
       log.info("Attempting to get score updates");
-      ResponseEntity<String> response =
-          yahooRestTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+      String response =
+          yahooRestClient
+              .get()
+              .uri(uri)
+              .header(HttpHeaders.AUTHORIZATION, getAuthToken())
+              .retrieve()
+              .body(String.class);
       XmlMapper xmlMapper = new XmlMapper();
-      FantasyContent fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
+      FantasyContent fantasyContent = xmlMapper.readValue(response, FantasyContent.class);
       StringBuilder currentPoints = new StringBuilder();
       if (isFinalUpdate) {
-        url += ";type=week;week=" + (fantasyContent.getLeague().getCurrent_week() - 1);
-        response = yahooRestTemplate.exchange(url, HttpMethod.GET, entity, String.class);
-        fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
+        uri += ";type=week;week=" + (fantasyContent.getLeague().getCurrent_week() - 1);
+        response =
+            yahooRestClient
+                .get()
+                .uri(uri)
+                .header(HttpHeaders.AUTHORIZATION, getAuthToken())
+                .retrieve()
+                .body(String.class);
+        fantasyContent = xmlMapper.readValue(response, FantasyContent.class);
       }
       currentPoints
           .append(isFinalUpdate ? "**Final Score Update**" : "**Score Update**")
@@ -183,18 +183,19 @@ public class YahooService {
   }
 
   public String getStandings() {
-    String url =
-        "https://fantasysports.yahooapis.com/fantasy/v2/league/449.l." + leagueId + "/standings";
-    HttpHeaders headers = new HttpHeaders();
-    headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + getAuthToken());
-    HttpEntity<Void> entity = new HttpEntity<>(headers);
+    String uri = "/fantasy/v2/league/449.l." + leagueId + "/standings";
 
     try {
       log.info("Attempting to get standings");
-      ResponseEntity<String> response =
-          yahooRestTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+      String response =
+          yahooRestClient
+              .get()
+              .uri(uri)
+              .header(HttpHeaders.AUTHORIZATION, getAuthToken())
+              .retrieve()
+              .body(String.class);
       XmlMapper xmlMapper = new XmlMapper();
-      FantasyContent fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
+      FantasyContent fantasyContent = xmlMapper.readValue(response, FantasyContent.class);
       StringBuilder sb = new StringBuilder();
       sb.append("**Current Standings:**").append("\n");
       for (Team team : fantasyContent.getLeague().getStandings().getTeams()) {
@@ -217,28 +218,28 @@ public class YahooService {
   }
 
   public String getPlayersToMonitor() {
-    String uri = "league/449.l." + leagueId + "/teams/roster";
-    String url = "https://fantasysports.yahooapis.com/fantasy/v2/" + uri;
-    HttpHeaders headers = new HttpHeaders();
-    headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + getAuthToken());
-    HttpEntity<Void> entity = new HttpEntity<>(headers);
+    String uri = "/fantasy/v2/league/449.l." + leagueId + "/teams/roster";
 
     try {
       log.info("Attempting to get rosters");
-      ResponseEntity<String> response =
-          yahooRestTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+      String response =
+          yahooRestClient
+              .get()
+              .uri(uri)
+              .header(HttpHeaders.AUTHORIZATION, getAuthToken())
+              .retrieve()
+              .body(String.class);
       XmlMapper xmlMapper = new XmlMapper();
-      FantasyContent fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
+      FantasyContent fantasyContent = xmlMapper.readValue(response, FantasyContent.class);
 
       String completedGamesUrl =
           "https://api-secure.sports.yahoo.com/v1/editorial/s/scoreboard?lang=en-US&region=US&tz=America/Chicago&ysp_redesign=1&ysp_platform=desktop&leagues=nfl&week="
               + fantasyContent.getLeague().getCurrent_week()
               + "&season=current&sched_states=2&v=2&ysp_enable_last_update=0&include_last_play=0";
       List<String> completedTeams = new ArrayList<>();
-      ResponseEntity<ScoreboardResponse> scoreboardResponseEntity =
-          yahooRestTemplate.exchange(
-              completedGamesUrl, HttpMethod.GET, null, ScoreboardResponse.class);
-      ScoreboardResponse scoreboardResponse = scoreboardResponseEntity.getBody();
+      RestClient scoreboardRestClient = RestClient.create(completedGamesUrl);
+      ScoreboardResponse scoreboardResponse =
+          scoreboardRestClient.get().retrieve().body(ScoreboardResponse.class);
       for (Map.Entry<String, Game> entry :
           scoreboardResponse.getService().getScoreboard().getGames().entrySet()) {
         if (entry.getValue().getStatus_type().equals("status.type.final")) {
@@ -280,20 +281,22 @@ public class YahooService {
   }
 
   public String getWaiverTransactions() {
-    String url =
+    String uri =
         "https://fantasysports.yahooapis.com/fantasy/v2/league/449.l."
             + leagueId
             + "/transactions;type=add";
-    HttpHeaders headers = new HttpHeaders();
-    headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + getAuthToken());
-    HttpEntity<Void> entity = new HttpEntity<>(headers);
 
     try {
       log.info("Attempting to get waiver report");
-      ResponseEntity<String> response =
-          yahooRestTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+      String response =
+          yahooRestClient
+              .get()
+              .uri(uri)
+              .header(HttpHeaders.AUTHORIZATION, getAuthToken())
+              .retrieve()
+              .body(String.class);
       XmlMapper xmlMapper = new XmlMapper();
-      FantasyContent fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
+      FantasyContent fantasyContent = xmlMapper.readValue(response, FantasyContent.class);
       StringBuilder sb = new StringBuilder();
       sb.append("**Waiver Report:**").append("\n");
       for (Transaction transaction : fantasyContent.getLeague().getTransactions()) {
@@ -326,37 +329,48 @@ public class YahooService {
   }
 
   public String getTrophies() {
-    String matchupsUrl =
+    String matchupsUri =
         "https://fantasysports.yahooapis.com/fantasy/v2/league/449.l." + leagueId + "/scoreboard";
-    HttpHeaders headers = new HttpHeaders();
-    headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + getAuthToken());
-    HttpEntity<Void> entity = new HttpEntity<>(headers);
 
     try {
       log.info("Attempting to get trophy information");
-      ResponseEntity<String> matchupsResponseEntity =
-          yahooRestTemplate.exchange(matchupsUrl, HttpMethod.GET, entity, String.class);
+      String matchupsResponse =
+          yahooRestClient
+              .get()
+              .uri(matchupsUri)
+              .header(HttpHeaders.AUTHORIZATION, getAuthToken())
+              .retrieve()
+              .body(String.class);
       XmlMapper xmlMapper = new XmlMapper();
-      FantasyContent fantasyContent =
-          xmlMapper.readValue(matchupsResponseEntity.getBody(), FantasyContent.class);
-      matchupsUrl += ";type=week;week=" + (fantasyContent.getLeague().getCurrent_week() - 1);
-      matchupsResponseEntity =
-          yahooRestTemplate.exchange(matchupsUrl, HttpMethod.GET, entity, String.class);
-      fantasyContent = xmlMapper.readValue(matchupsResponseEntity.getBody(), FantasyContent.class);
-      String weeklyScoresUrl =
+      FantasyContent fantasyContent = xmlMapper.readValue(matchupsResponse, FantasyContent.class);
+      matchupsUri += ";type=week;week=" + (fantasyContent.getLeague().getCurrent_week() - 1);
+      matchupsResponse =
+          yahooRestClient
+              .get()
+              .uri(matchupsUri)
+              .header(HttpHeaders.AUTHORIZATION, getAuthToken())
+              .retrieve()
+              .body(String.class);
+      fantasyContent = xmlMapper.readValue(matchupsResponse, FantasyContent.class);
+      String weeklyScoresUri =
           "https://fantasysports.yahooapis.com/fantasy/v2/league/449.l.16001/teams/stats;type=week;week="
               + (fantasyContent.getLeague().getCurrent_week() - 1);
-      ResponseEntity<String> weeklyScoresResponseEntity =
-          yahooRestTemplate.exchange(weeklyScoresUrl, HttpMethod.GET, entity, String.class);
+      String weeklyScoresResponseEntity =
+          yahooRestClient
+              .get()
+              .uri(weeklyScoresUri)
+              .header(HttpHeaders.AUTHORIZATION, getAuthToken())
+              .retrieve()
+              .body(String.class);
       Team[] weeklyScoresByTeam =
           xmlMapper
-              .readValue(weeklyScoresResponseEntity.getBody(), FantasyContent.class)
+              .readValue(weeklyScoresResponseEntity, FantasyContent.class)
               .getLeague()
               .getTeams();
       StringBuilder sb = new StringBuilder();
       sb.append("**Trophies of the week:**\n");
       Matchup[] matchups = fantasyContent.getLeague().getScoreboard().getMatchups();
-      Map<String, Team> highAndLowScores = TrophyHelper.getHighAndLowScores(weeklyScoresByTeam);
+      Map<String, Team> highAndLowScores = trophyHelper.getHighAndLowScores(weeklyScoresByTeam);
       sb.append(":crown: High score :crown:\n")
           .append(highAndLowScores.get("highScore").getName())
           .append(" with ")
@@ -368,7 +382,7 @@ public class YahooService {
           .append(highAndLowScores.get("lowScore").getTeam_points().getTotal())
           .append(" points\n");
 
-      Map<String, Team> blowoutTeams = TrophyHelper.getBlowout(matchups);
+      Map<String, Team> blowoutTeams = trophyHelper.getBlowout(matchups);
       sb.append(":scream: Blow out :scream:\n")
           .append(blowoutTeams.get("winningTeam").getName())
           .append(" blew out ")
@@ -380,7 +394,7 @@ public class YahooService {
                       - blowoutTeams.get("losingTeam").getTeam_points().getTotal()))
           .append(" points\n");
 
-      Map<String, Team> closeWinTeams = TrophyHelper.getCloseWin(matchups);
+      Map<String, Team> closeWinTeams = trophyHelper.getCloseWin(matchups);
       sb.append(":sweat_smile: Close win :sweat_smile:\n")
           .append(closeWinTeams.get("winningTeam").getName())
           .append(" barely beat ")
@@ -392,7 +406,7 @@ public class YahooService {
                       - closeWinTeams.get("losingTeam").getTeam_points().getTotal()))
           .append(" points\n");
 
-      String[] luckyTeam = TrophyHelper.getLuckyTeam(weeklyScoresByTeam, matchups);
+      String[] luckyTeam = trophyHelper.getLuckyTeam(weeklyScoresByTeam, matchups);
       sb.append(":four_leaf_clover: Lucky :four_leaf_clover:\n")
           .append(luckyTeam[0])
           .append(" was ")
@@ -401,7 +415,7 @@ public class YahooService {
           .append(11 - Integer.parseInt(luckyTeam[1]))
           .append(" against the league, but still got the win\n");
 
-      String[] unluckyTeam = TrophyHelper.getUnluckyTeam(weeklyScoresByTeam, matchups);
+      String[] unluckyTeam = trophyHelper.getUnluckyTeam(weeklyScoresByTeam, matchups);
       sb.append(":rage: Unlucky :rage:\n")
           .append(unluckyTeam[0])
           .append(" was ")
@@ -410,7 +424,7 @@ public class YahooService {
           .append(11 - Integer.parseInt(unluckyTeam[1]))
           .append(" against the league, but still took an L\n");
 
-      Team overachiever = TrophyHelper.getOverachiever(weeklyScoresByTeam);
+      Team overachiever = trophyHelper.getOverachiever(weeklyScoresByTeam);
       if (overachiever != null) {
         sb.append(":chart_with_upwards_trend: Overachiever :chart_with_upwards_trend:\n")
             .append(overachiever.getName())
@@ -422,7 +436,7 @@ public class YahooService {
             .append(" points over their projection\n");
       }
 
-      Team underachiever = TrophyHelper.getUnderachiever(weeklyScoresByTeam);
+      Team underachiever = trophyHelper.getUnderachiever(weeklyScoresByTeam);
       if (underachiever != null) {
         sb.append(":chart_with_downwards_trend: Underachiever :chart_with_downwards_trend:\n")
             .append(underachiever.getName())
@@ -436,7 +450,7 @@ public class YahooService {
       }
 
       String[] bestAndWorstManager =
-          TrophyHelper.getBestAndWorstManager(
+          trophyHelper.getBestAndWorstManager(
               weeklyScoresByTeam, fantasyContent.getLeague().getCurrent_week() - 1);
       sb.append(":robot: Best Manager :robot:\n")
           .append(bestAndWorstManager[0])

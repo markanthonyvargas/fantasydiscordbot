@@ -1,22 +1,25 @@
 package com.markvargas.discordbot.client.yahoo.service;
 
-import static com.markvargas.discordbot.client.yahoo.service.YahooService.getAuthToken;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.markvargas.discordbot.client.yahoo.model.*;
 import java.util.*;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpEntity;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 
 @Slf4j
+@Service
 public class TrophyHelper {
 
-  public static Map<String, Team> getHighAndLowScores(Team[] teams) {
+  @Autowired
+  @Qualifier("yahooRestClient")
+  private RestClient yahooRestClient;
+
+  public Map<String, Team> getHighAndLowScores(Team[] teams) {
     Map<String, Team> teamAndScore = new HashMap<>();
     Arrays.sort(teams);
     teamAndScore.put("highScore", teams[teams.length - 1]);
@@ -24,7 +27,7 @@ public class TrophyHelper {
     return teamAndScore;
   }
 
-  public static Map<String, Team> getBlowout(Matchup[] matchups) {
+  public Map<String, Team> getBlowout(Matchup[] matchups) {
     double blowoutMargin = 0.0;
     Team blowoutTeam = new Team();
     Team losingTeam = new Team();
@@ -49,7 +52,7 @@ public class TrophyHelper {
     return blowOut;
   }
 
-  public static Map<String, Team> getCloseWin(Matchup[] matchups) {
+  public Map<String, Team> getCloseWin(Matchup[] matchups) {
     double winMargin = 1000;
     Team blowoutTeam = new Team();
     Team losingTeam = new Team();
@@ -73,7 +76,7 @@ public class TrophyHelper {
     return blowOut;
   }
 
-  public static String[] getLuckyTeam(Team[] teams, Matchup[] matchups) {
+  public String[] getLuckyTeam(Team[] teams, Matchup[] matchups) {
     List<String> winningTeams = new ArrayList<>();
 
     for (Matchup matchup : matchups) {
@@ -95,7 +98,7 @@ public class TrophyHelper {
     return new String[] {luckyTeam.getName(), Integer.toString(wins)};
   }
 
-  public static String[] getUnluckyTeam(Team[] teams, Matchup[] matchups) {
+  public String[] getUnluckyTeam(Team[] teams, Matchup[] matchups) {
     List<String> winningTeams = new ArrayList<>();
 
     for (Matchup matchup : matchups) {
@@ -118,7 +121,7 @@ public class TrophyHelper {
     return new String[] {unluckyTeam.getName(), Integer.toString(wins)};
   }
 
-  public static Team getOverachiever(Team[] teams) {
+  public Team getOverachiever(Team[] teams) {
     Team overachiever = null;
     double pointsOverProjection = 0.0;
 
@@ -134,7 +137,7 @@ public class TrophyHelper {
     return overachiever;
   }
 
-  public static Team getUnderachiever(Team[] teams) {
+  public Team getUnderachiever(Team[] teams) {
     Team underachiever = null;
     double pointsOverProjection = 1000.0;
 
@@ -150,15 +153,8 @@ public class TrophyHelper {
     return underachiever;
   }
 
-  public static String[] getBestAndWorstManager(Team[] weeklyScores, int currentWeek)
+  public String[] getBestAndWorstManager(Team[] weeklyScores, int currentWeek)
       throws JsonProcessingException {
-    String getPlayerWeekStatsUrl = "https://fantasysports.yahooapis.com/fantasy/v2/team/";
-    String getPlayerWeekStatsUri =
-        "/roster;type=week;week=" + currentWeek + "/players/stats;type=week;week=" + currentWeek;
-    HttpHeaders headers = new HttpHeaders();
-    headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + getAuthToken());
-    HttpEntity<Void> entity = new HttpEntity<>(headers);
-
     String[] bestAndWorstManager = new String[5];
     String bestManagerTeamName = "";
     String worstManagerTeamName = "";
@@ -166,17 +162,24 @@ public class TrophyHelper {
     double worstPointPercentage = 1000.0;
     double worstPointDifference = 0.0;
     XmlMapper xmlMapper = new XmlMapper();
-    RestTemplate yahooRestTemplate = new RestTemplate();
 
     for (Team team : weeklyScores) {
-      ResponseEntity<String> response =
-          yahooRestTemplate.exchange(
-              getPlayerWeekStatsUrl + team.getTeam_key() + getPlayerWeekStatsUri,
-              HttpMethod.GET,
-              entity,
-              String.class);
+      String getPlayerWeekStatsUri =
+          "/fantasy/v2/team/"
+              + team.getTeam_key()
+              + "/roster;type=week;week="
+              + currentWeek
+              + "/players/stats;type=week;week="
+              + currentWeek;
+      String response =
+          yahooRestClient
+              .get()
+              .uri(getPlayerWeekStatsUri)
+              .header(HttpHeaders.AUTHORIZATION, YahooService.getAuthToken())
+              .retrieve()
+              .body(String.class);
       FantasyContent fantasyContent;
-      fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
+      fantasyContent = xmlMapper.readValue(response, FantasyContent.class);
       List<Player> playersWithWeeklyScores =
           new LinkedList<>(Arrays.asList(fantasyContent.getTeam().getRoster().getPlayers()));
       List<Player> optimalLineup = new ArrayList<>();
@@ -254,7 +257,7 @@ public class TrophyHelper {
     return bestAndWorstManager;
   }
 
-  private static List<Player> getPlayersByPosition(String position, List<Player> players) {
+  private List<Player> getPlayersByPosition(String position, List<Player> players) {
     List<Player> playersByPosition = new ArrayList<>();
     for (Player player : players) {
       if (player.getEligible_positions().contains(position)) {
