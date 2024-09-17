@@ -356,17 +356,6 @@ public class YahooService {
               .readValue(weeklyScoresResponseEntity.getBody(), FantasyContent.class)
               .getLeague()
               .getTeams();
-      String weeklyRosterUrl =
-          "https://fantasysports.yahooapis.com/fantasy/v2/league/449.l."
-              + leagueId
-              + "/teams/roster";
-      ResponseEntity<String> weeklyRosterEntity =
-          yahooRestTemplate.exchange(weeklyRosterUrl, HttpMethod.GET, entity, String.class);
-      Team[] weeklyRosters =
-          xmlMapper
-              .readValue(weeklyRosterEntity.getBody(), FantasyContent.class)
-              .getLeague()
-              .getTeams();
       StringBuilder sb = new StringBuilder();
       sb.append("**Trophies of the week:**\n");
       Matchup[] matchups = fantasyContent.getLeague().getScoreboard().getMatchups();
@@ -451,10 +440,7 @@ public class YahooService {
 
       String[] bestAndWorstManager =
           TrophyHelper.getBestAndWorstManager(
-              weeklyRosters,
-              weeklyScoresByTeam,
-              fantasyContent.getLeague().getCurrent_week() - 1,
-              leagueId);
+              weeklyScoresByTeam, fantasyContent.getLeague().getCurrent_week() - 1);
       sb.append(":robot: Best Manager :robot:\n")
           .append(bestAndWorstManager[0])
           .append(" scored ")

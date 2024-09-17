@@ -2,6 +2,7 @@ package com.markvargas.discordbot.client.yahoo.service;
 
 import static com.markvargas.discordbot.client.yahoo.service.YahooService.getAuthToken;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.markvargas.discordbot.client.yahoo.model.*;
 import java.util.*;
@@ -149,13 +150,11 @@ public class TrophyHelper {
     return underachiever;
   }
 
-  public static String[] getBestAndWorstManager(
-      Team[] teams, Team[] weeklyScores, int currentWeek, String leagueId) {
-    String getPlayerWeekStatsUrl =
-        "https://fantasysports.yahooapis.com/fantasy/v2/league/449.l."
-            + leagueId
-            + "/players;player_keys=";
-    String getPlayerWeekStatsUri = "/stats;type=week;week=" + currentWeek;
+  public static String[] getBestAndWorstManager(Team[] weeklyScores, int currentWeek)
+      throws JsonProcessingException {
+    String getPlayerWeekStatsUrl = "https://fantasysports.yahooapis.com/fantasy/v2/team/";
+    String getPlayerWeekStatsUri =
+        "/roster;type=week;week=" + currentWeek + "/players/stats;type=week;week=" + currentWeek;
     HttpHeaders headers = new HttpHeaders();
     headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + getAuthToken());
     HttpEntity<Void> entity = new HttpEntity<>(headers);
@@ -166,99 +165,85 @@ public class TrophyHelper {
     double optimalPointPercentage = 0.0;
     double worstPointPercentage = 1000.0;
     double worstPointDifference = 0.0;
-    int index = 0;
     XmlMapper xmlMapper = new XmlMapper();
     RestTemplate yahooRestTemplate = new RestTemplate();
 
-    for (Team team : teams) {
-      Player[] players = team.getRoster().getPlayers();
-      StringBuilder sb = new StringBuilder();
-      for (Player player : players) {
-        sb.append(player.getPlayer_key()).append(",");
+    for (Team team : weeklyScores) {
+      ResponseEntity<String> response =
+          yahooRestTemplate.exchange(
+              getPlayerWeekStatsUrl + team.getTeam_key() + getPlayerWeekStatsUri,
+              HttpMethod.GET,
+              entity,
+              String.class);
+      FantasyContent fantasyContent;
+      fantasyContent = xmlMapper.readValue(response.getBody(), FantasyContent.class);
+      List<Player> playersWithWeeklyScores =
+          new LinkedList<>(Arrays.asList(fantasyContent.getTeam().getRoster().getPlayers()));
+      List<Player> optimalLineup = new ArrayList<>();
+
+      List<Player> qbs = getPlayersByPosition("QB", playersWithWeeklyScores);
+      PlayerComparator playerComparator = new PlayerComparator();
+      qbs.sort(playerComparator);
+      Collections.reverse(qbs);
+      optimalLineup.add(qbs.get(0));
+      playersWithWeeklyScores.remove(qbs.get(0));
+
+      List<Player> wrs = getPlayersByPosition("WR", playersWithWeeklyScores);
+      wrs.sort(playerComparator);
+      Collections.reverse(wrs);
+      optimalLineup.add(wrs.get(0));
+      optimalLineup.add(wrs.get(1));
+      playersWithWeeklyScores.remove(wrs.get(0));
+      playersWithWeeklyScores.remove(wrs.get(1));
+
+      List<Player> rbs = getPlayersByPosition("RB", playersWithWeeklyScores);
+      rbs.sort(playerComparator);
+      Collections.reverse(rbs);
+      optimalLineup.add(rbs.get(0));
+      optimalLineup.add(rbs.get(1));
+      playersWithWeeklyScores.remove(rbs.get(0));
+      playersWithWeeklyScores.remove(rbs.get(1));
+
+      List<Player> tes = getPlayersByPosition("TE", playersWithWeeklyScores);
+      tes.sort(playerComparator);
+      Collections.reverse(tes);
+      optimalLineup.add(tes.get(0));
+      playersWithWeeklyScores.remove(tes.get(0));
+
+      List<Player> flex = getPlayersByPosition("W/R/T", playersWithWeeklyScores);
+      flex.sort(playerComparator);
+      Collections.reverse(flex);
+      optimalLineup.add(flex.get(0));
+      playersWithWeeklyScores.remove(flex.get(0));
+
+      List<Player> kickers = getPlayersByPosition("K", playersWithWeeklyScores);
+      kickers.sort(playerComparator);
+      Collections.reverse(kickers);
+      optimalLineup.add(kickers.get(0));
+      playersWithWeeklyScores.remove(kickers.get(0));
+
+      List<Player> defense = getPlayersByPosition("DEF", playersWithWeeklyScores);
+      defense.sort(playerComparator);
+      Collections.reverse(defense);
+      optimalLineup.add(defense.get(0));
+      playersWithWeeklyScores.remove(defense.get(0));
+
+      double optimalScore = 0.0;
+      for (Player player : optimalLineup) {
+        optimalScore += player.getPlayer_points().getTotal();
       }
 
-      String playerKeys = sb.toString();
-      playerKeys = playerKeys.substring(0, playerKeys.length() - 1);
-      String finalUrl = getPlayerWeekStatsUrl + playerKeys + getPlayerWeekStatsUri;
-      ResponseEntity<String> responseEntity =
-          yahooRestTemplate.exchange(finalUrl, HttpMethod.GET, entity, String.class);
-      FantasyContent fantasyContent = null;
-      try {
-        fantasyContent = xmlMapper.readValue(responseEntity.getBody(), FantasyContent.class);
-      } catch (Exception e) {
-        log.error("Error while attempting to get weekly scores for {}", team.getName());
+      double currentTeamOptimalScorePercentage = team.getTeam_points().getTotal() / optimalScore;
+
+      if (currentTeamOptimalScorePercentage > optimalPointPercentage) {
+        optimalPointPercentage = currentTeamOptimalScorePercentage;
+        bestManagerTeamName = team.getName();
       }
-      if (fantasyContent != null) {
-        List<Player> playersWithWeeklyScores =
-            new LinkedList<>(Arrays.asList(fantasyContent.getLeague().getPlayers()));
-        List<Player> optimalLineup = new ArrayList<>();
-
-        List<Player> qbs = getPlayersByPosition("QB", playersWithWeeklyScores);
-        PlayerComparator playerComparator = new PlayerComparator();
-        qbs.sort(playerComparator);
-        Collections.reverse(qbs);
-        optimalLineup.add(qbs.get(0));
-        playersWithWeeklyScores.remove(qbs.get(0));
-
-        List<Player> wrs = getPlayersByPosition("WR", playersWithWeeklyScores);
-        wrs.sort(playerComparator);
-        Collections.reverse(wrs);
-        optimalLineup.add(wrs.get(0));
-        optimalLineup.add(wrs.get(1));
-        playersWithWeeklyScores.remove(wrs.get(0));
-        playersWithWeeklyScores.remove(wrs.get(1));
-
-        List<Player> rbs = getPlayersByPosition("RB", playersWithWeeklyScores);
-        rbs.sort(playerComparator);
-        Collections.reverse(rbs);
-        optimalLineup.add(rbs.get(0));
-        optimalLineup.add(rbs.get(1));
-        playersWithWeeklyScores.remove(rbs.get(0));
-        playersWithWeeklyScores.remove(rbs.get(1));
-
-        List<Player> tes = getPlayersByPosition("TE", playersWithWeeklyScores);
-        tes.sort(playerComparator);
-        Collections.reverse(tes);
-        optimalLineup.add(tes.get(0));
-        playersWithWeeklyScores.remove(tes.get(0));
-
-        List<Player> flex = getPlayersByPosition("W/R/T", playersWithWeeklyScores);
-        flex.sort(playerComparator);
-        Collections.reverse(flex);
-        optimalLineup.add(flex.get(0));
-        playersWithWeeklyScores.remove(flex.get(0));
-
-        List<Player> kickers = getPlayersByPosition("K", playersWithWeeklyScores);
-        kickers.sort(playerComparator);
-        Collections.reverse(kickers);
-        optimalLineup.add(kickers.get(0));
-        playersWithWeeklyScores.remove(kickers.get(0));
-
-        List<Player> defense = getPlayersByPosition("DEF", playersWithWeeklyScores);
-        defense.sort(playerComparator);
-        Collections.reverse(defense);
-        optimalLineup.add(defense.get(0));
-        playersWithWeeklyScores.remove(defense.get(0));
-
-        double optimalScore = 0.0;
-        for (Player player : optimalLineup) {
-          optimalScore += player.getPlayer_points().getTotal();
-        }
-
-        double currentTeamOptimalScorePercentage =
-            weeklyScores[index].getTeam_points().getTotal() / optimalScore;
-
-        if (currentTeamOptimalScorePercentage > optimalPointPercentage) {
-          optimalPointPercentage = currentTeamOptimalScorePercentage;
-          bestManagerTeamName = team.getName();
-        }
-        if (currentTeamOptimalScorePercentage < worstPointPercentage) {
-          worstPointPercentage = currentTeamOptimalScorePercentage;
-          worstManagerTeamName = team.getName();
-          worstPointDifference = optimalScore - weeklyScores[index].getTeam_points().getTotal();
-        }
+      if (currentTeamOptimalScorePercentage < worstPointPercentage) {
+        worstPointPercentage = currentTeamOptimalScorePercentage;
+        worstManagerTeamName = team.getName();
+        worstPointDifference = optimalScore - team.getTeam_points().getTotal();
       }
-      index++;
     }
     bestAndWorstManager[0] = bestManagerTeamName;
     bestAndWorstManager[1] = Double.toString(optimalPointPercentage * 100);
