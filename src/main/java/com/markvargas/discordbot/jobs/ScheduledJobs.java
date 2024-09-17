@@ -53,7 +53,7 @@ public class ScheduledJobs {
     }
   }
 
-  @Scheduled(cron = "10 30 7 * * 2", zone = "America/New_York")
+  @Scheduled(cron = "0 30 7 * * 2", zone = "America/New_York")
   public void getFinalScoreUpdateJob() {
     log.info("Scheduled job for getting final score update running...");
     String scoreUpdates = yahooService.getScoreUpdates(true);
@@ -99,7 +99,7 @@ public class ScheduledJobs {
     }
   }
 
-  @Scheduled(cron = "20 30 7 * * 2", zone = "America/New_York")
+  @Scheduled(cron = "0 30 7 * * 2", zone = "America/New_York")
   public void getTrophiesJob() {
     log.info("Scheduled job for getting trophies running...");
     String trophies = yahooService.getTrophies();

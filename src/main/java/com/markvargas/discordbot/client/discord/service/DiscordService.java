@@ -5,6 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.retry.support.RetrySynchronizationManager;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -16,7 +19,9 @@ public class DiscordService {
   @Qualifier("discordRestClient")
   private RestClient discordRestClient;
 
+  @Retryable(backoff = @Backoff(delay = 3000))
   public void createMessage(String message) {
+    log.info("Retry number: {}", RetrySynchronizationManager.getContext().getRetryCount());
     DiscordMessageRequest messageRequest = new DiscordMessageRequest(message);
     try {
       log.info("Attempting to post message to Discord channel");
