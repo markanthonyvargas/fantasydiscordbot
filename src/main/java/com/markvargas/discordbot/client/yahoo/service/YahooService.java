@@ -14,8 +14,11 @@ import java.io.FileWriter;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Scanner;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -468,6 +471,115 @@ public class YahooService {
       return sb.toString();
     } catch (Exception e) {
       log.error("Could not get trophies due to", e);
+      return "";
+    }
+  }
+
+  public String getPowerRankings() {
+    String getCurrentWeekUri = "/fantasy/v2/league/449.l." + leagueId;
+    String getMatchupsUri = "/fantasy/v2/league/449.l." + leagueId + "/scoreboard;type=week;week=";
+    Map<String, Double> powerRankings = new HashMap<>();
+    Map<String, Integer> lastRank = new HashMap<>();
+
+    try {
+      log.info("Attempting to get power rankings");
+      String response =
+          yahooRestClient
+              .get()
+              .uri(getCurrentWeekUri)
+              .header(HttpHeaders.AUTHORIZATION, getAuthToken())
+              .retrieve()
+              .body(String.class);
+      XmlMapper xmlMapper = new XmlMapper();
+      FantasyContent fantasyContent = xmlMapper.readValue(response, FantasyContent.class);
+      int currentWeek = fantasyContent.getLeague().getCurrent_week();
+
+      for (int i = 1; i < currentWeek; i++) {
+        response =
+            yahooRestClient
+                .get()
+                .uri(getMatchupsUri + i)
+                .header(HttpHeaders.AUTHORIZATION, getAuthToken())
+                .retrieve()
+                .body(String.class);
+        Matchup[] matchups =
+            xmlMapper
+                .readValue(response, FantasyContent.class)
+                .getLeague()
+                .getScoreboard()
+                .getMatchups();
+
+        List<Double> weeklyScores = new ArrayList<>();
+        List<String> winnerKeys = new ArrayList<>();
+
+        for (Matchup matchup : matchups) {
+          winnerKeys.add(matchup.getWinner_team_key());
+          for (Team team : matchup.getTeams()) {
+            weeklyScores.add(team.getTeam_points().getTotal());
+          }
+        }
+
+        Collections.sort(weeklyScores);
+
+        for (Matchup matchup : matchups) {
+          for (Team team : matchup.getTeams()) {
+            double powerRanking =
+                (((weeklyScores.indexOf(team.getTeam_points().getTotal())
+                                + (winnerKeys.contains(team.getTeam_key()) ? 1.0 : 0.0))
+                            / 12.0)
+                        * 50)
+                    + 50;
+            if (powerRankings.containsKey(team.getName())) {
+              powerRankings.put(team.getName(), powerRankings.get(team.getName()) + powerRanking);
+            } else {
+              powerRankings.put(team.getName(), powerRanking);
+            }
+          }
+        }
+
+        List<Entry<String, Double>> preSortList = new ArrayList<>(powerRankings.entrySet());
+        preSortList.sort(Entry.comparingByValue());
+        Collections.reverse(preSortList);
+
+        if (i == currentWeek - 2) {
+          int lastRankValue = 1;
+          for (Entry<String, Double> entry : preSortList) {
+            lastRank.put(entry.getKey(), lastRankValue);
+            lastRankValue++;
+          }
+        }
+      }
+
+      List<Entry<String, Double>> sortList = new ArrayList<>(powerRankings.entrySet());
+      sortList.sort(Entry.comparingByValue());
+      Collections.reverse(sortList);
+
+      int rank = 1;
+      StringBuilder sb = new StringBuilder();
+      sb.append("**Power Rankings**\n");
+      for (Entry<String, Double> entry : sortList) {
+        String rankTrend;
+        int changeInRank = lastRank.get(entry.getKey()) - rank;
+        if (changeInRank > 0) {
+          rankTrend = "(+" + changeInRank + ")";
+        } else if (changeInRank < 0) {
+          rankTrend = "(-" + Math.abs(changeInRank) + ")";
+        } else {
+          rankTrend = "(-)";
+        }
+        sb.append(rank)
+            .append(":\t")
+            .append(entry.getKey())
+            .append(" ")
+            .append(df.format(entry.getValue() / (currentWeek - 1)))
+            .append(" ")
+            .append(rankTrend)
+            .append("\n");
+        rank++;
+      }
+      return sb.toString();
+    } catch (Exception e) {
+      log.error("Could not get power rankings due to", e);
       return "";
     }
   }

@@ -109,4 +109,15 @@ public class ScheduledJobs {
       discordService.createMessage(trophies);
     }
   }
+
+  @Scheduled(cron = "0 30 18 * * 2", zone = "America/New_York")
+  public void getPowerRankingsJob() {
+    log.info("Scheduled job for getting power rankings running...");
+    String powerRankings = yahooService.getPowerRankings();
+    if (StringUtils.isEmpty(powerRankings)) {
+      log.warn("Message not posted as it was empty");
+    } else {
+      discordService.createMessage(powerRankings);
+    }
+  }
 }
