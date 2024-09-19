@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class PingPong {
+public class Interaction {
 
-    private int type;
+  private int type;
 }
