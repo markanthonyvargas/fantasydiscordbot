@@ -1,5 +1,7 @@
 package com.markvargas.discordbot.config;
 
+import discord4j.core.DiscordClientBuilder;
+import discord4j.core.GatewayDiscordClient;
 import java.util.Base64;
 import java.util.function.Consumer;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -8,11 +10,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.web.client.RestClient;
 
 @Configuration
-@EnableRetry
 public class AppConfiguration {
 
   @Value("${clientId}")
@@ -20,9 +20,6 @@ public class AppConfiguration {
 
   @Value("${clientSecret}")
   private String clientSecret;
-
-  @Value("${channelId}")
-  private String channelId;
 
   @Value("${botToken}")
   private String botToken;
@@ -50,17 +47,7 @@ public class AppConfiguration {
   }
 
   @Bean
-  @Qualifier("discordRestClient")
-  public RestClient discordRestClient() {
-    Consumer<HttpHeaders> headersConsumer =
-        httpHeaders -> {
-          httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-          httpHeaders.set(HttpHeaders.AUTHORIZATION, "Bot " + botToken);
-          httpHeaders.set(HttpHeaders.USER_AGENT, "DiscordBot (fantasydiscordbot.onrender.com, 1");
-        };
-    return RestClient.builder()
-        .baseUrl("https://discord.com/api/v10/channels/" + channelId + "/messages")
-        .defaultHeaders(headersConsumer)
-        .build();
+  public GatewayDiscordClient discordClient() {
+    return DiscordClientBuilder.create(botToken).build().login().block();
   }
 }
