@@ -22,13 +22,18 @@ public class WaiverReportCommand implements SlashCommand {
   @Override
   public Mono<Void> handle(ChatInputInteractionEvent event) {
     log.info("Retry number: {}", RetrySynchronizationManager.getContext().getRetryCount());
-    String username;
-    if (event.getInteraction().getMember().isPresent()) {
-      username = event.getInteraction().getMember().get().getDisplayName();
-    } else {
-      username = event.getInteraction().getUser().getUsername();
+    try {
+      String username;
+      if (event.getInteraction().getMember().isPresent()) {
+        username = event.getInteraction().getMember().get().getDisplayName();
+      } else {
+        username = event.getInteraction().getUser().getUsername();
+      }
+      log.info("{} triggered the waiver report command", username);
+      return event.reply().withEphemeral(true).withContent(yahooService.getWaiverTransactions());
+    } catch (Exception e) {
+      log.warn("Error while attempting to respond to slash command, will retry");
+      throw new RuntimeException();
     }
-    log.info("{} triggered the waiver report command", username);
-    return event.reply().withEphemeral(true).withContent(yahooService.getWaiverTransactions());
   }
 }

@@ -22,13 +22,18 @@ public class StandingsCommand implements SlashCommand {
   @Override
   public Mono<Void> handle(ChatInputInteractionEvent event) {
     log.info("Retry number: {}", RetrySynchronizationManager.getContext().getRetryCount());
-    String username;
-    if (event.getInteraction().getMember().isPresent()) {
-      username = event.getInteraction().getMember().get().getDisplayName();
-    } else {
-      username = event.getInteraction().getUser().getUsername();
+    try {
+      String username;
+      if (event.getInteraction().getMember().isPresent()) {
+        username = event.getInteraction().getMember().get().getDisplayName();
+      } else {
+        username = event.getInteraction().getUser().getUsername();
+      }
+      log.info("{} triggered the standings command", username);
+      return event.reply().withEphemeral(true).withContent(yahooService.getStandings());
+    } catch (Exception e) {
+      log.warn("Error while attempting to respond to slash command, will retry");
+      throw new RuntimeException();
     }
-    log.info("{} triggered the standings command", username);
-    return event.reply().withEphemeral(true).withContent(yahooService.getStandings());
   }
 }
