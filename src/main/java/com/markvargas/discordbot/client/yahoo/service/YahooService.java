@@ -310,7 +310,8 @@ public class YahooService {
         if (today.get(Calendar.DAY_OF_YEAR) == timestamp.get(Calendar.DAY_OF_YEAR)) {
           Player[] players = transaction.getPlayers();
           if (players[0].getTransaction_data().getSource_type().equals("waivers")) {
-            String teamName = players[0].getTransaction_data().getDestination_team_name();
+            String teamName =
+                players[0].getTransaction_data().getDestination_team_name().replace("_", "\\_");
             sb.append(teamName).append("\n");
             for (Player player : players) {
               sb.append(
