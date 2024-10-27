@@ -1,6 +1,7 @@
 package com.markvargas.discordbot.client.yahoo.service;
 
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.markvargas.discordbot.client.discord.service.DiscordService;
 import com.markvargas.discordbot.client.yahoo.model.FantasyContent;
 import com.markvargas.discordbot.client.yahoo.model.Game;
 import com.markvargas.discordbot.client.yahoo.model.Matchup;
@@ -43,6 +44,8 @@ public class YahooService {
 
   @Autowired private TrophyHelper trophyHelper;
 
+  @Autowired private DiscordService discordService;
+
   @Value("${refreshToken}")
   private String refreshToken;
 
@@ -77,6 +80,7 @@ public class YahooService {
       fileWriter.close();
     } catch (Exception e) {
       log.error("Unable to get access token from Yahoo due to", e);
+      discordService.sendMessage();
     }
   }
 

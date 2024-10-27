@@ -17,6 +17,9 @@ public class DiscordService {
   @Value("${channelId}")
   private String channelId;
 
+  @Value("${directMessageChannelId}")
+  private String directMessageChannelId;
+
   @Autowired private GatewayDiscordClient discordClient;
 
   @Retryable(backoff = @Backoff(delay = 3000))
@@ -29,5 +32,18 @@ public class DiscordService {
         .createMessage(message)
         .block();
     log.info("Message posted successfully!");
+  }
+
+  @Retryable(backoff = @Backoff(delay = 3000))
+  public void sendMessage() {
+    log.info("Retry number: {}", RetrySynchronizationManager.getContext().getRetryCount());
+    log.info("Attempting to send Discord message for auth error");
+    discordClient
+        .getRestClient()
+        .getChannelById(Snowflake.of(directMessageChannelId))
+        .createMessage(
+            "There was an issue while getting an auth token for Yahoo, please investigate")
+        .block();
+    log.info("Message sent successfully.");
   }
 }
