@@ -26,6 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -57,6 +58,7 @@ public class YahooService {
 
   private static final DecimalFormat df = new DecimalFormat("0.00");
 
+  @Profile("!test")
   public void saveAuthToken() {
     String requestBody =
         "redirect_uri="

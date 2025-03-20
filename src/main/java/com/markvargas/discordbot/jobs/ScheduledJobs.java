@@ -7,6 +7,7 @@ import javax.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.annotation.Schedules;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,7 @@ public class ScheduledJobs {
 
   @Autowired private DiscordService discordService;
 
+  @Profile("!test")
   @PostConstruct
   @Scheduled(fixedRate = 45, initialDelay = 45, timeUnit = TimeUnit.MINUTES)
   public void getAuthTokenJob() {
