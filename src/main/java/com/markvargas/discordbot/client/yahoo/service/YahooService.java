@@ -56,6 +56,9 @@ public class YahooService {
   @Value("${redirectUri}")
   private String redirectUri;
 
+  @Value("${resourceId}")
+  private String resourceId;
+
   private static final DecimalFormat df = new DecimalFormat("0.00");
 
   @Profile("!test")
@@ -104,7 +107,7 @@ public class YahooService {
   }
 
   public String getMatchups() {
-    String uri = "/fantasy/v2/league/449.l." + leagueId + "/scoreboard";
+    String uri = "/fantasy/v2/league/" + resourceId + ".l." + leagueId + "/scoreboard";
 
     try {
       log.info("Attempting to get matchups");
@@ -143,7 +146,7 @@ public class YahooService {
   }
 
   public String getScoreUpdates(boolean isFinalUpdate) {
-    String uri = "/fantasy/v2/league/449.l." + leagueId + "/scoreboard";
+    String uri = "/fantasy/v2/league/" + resourceId + ".l." + leagueId + "/scoreboard";
 
     try {
       log.info("Attempting to get score updates");
@@ -192,7 +195,7 @@ public class YahooService {
   }
 
   public String getStandings() {
-    String uri = "/fantasy/v2/league/449.l." + leagueId + "/standings";
+    String uri = "/fantasy/v2/league/" + resourceId + ".l." + leagueId + "/standings";
 
     try {
       log.info("Attempting to get standings");
@@ -227,7 +230,7 @@ public class YahooService {
   }
 
   public String getPlayersToMonitor() {
-    String uri = "/fantasy/v2/league/449.l." + leagueId + "/teams/roster";
+    String uri = "/fantasy/v2/league/" + resourceId + ".l." + leagueId + "/teams/roster";
 
     try {
       log.info("Attempting to get rosters");
@@ -291,7 +294,7 @@ public class YahooService {
 
   public String getWaiverTransactions() {
     String uri =
-        "https://fantasysports.yahooapis.com/fantasy/v2/league/449.l."
+        "https://fantasysports.yahooapis.com/fantasy/v2/league/" + resourceId + ".l."
             + leagueId
             + "/transactions;type=add";
 
@@ -340,7 +343,7 @@ public class YahooService {
 
   public String getTrophies() {
     String matchupsUri =
-        "https://fantasysports.yahooapis.com/fantasy/v2/league/449.l." + leagueId + "/scoreboard";
+        "https://fantasysports.yahooapis.com/fantasy/v2/league/" + resourceId + ".l." + leagueId + "/scoreboard";
 
     try {
       log.info("Attempting to get trophy information");
@@ -363,7 +366,9 @@ public class YahooService {
               .body(String.class);
       fantasyContent = xmlMapper.readValue(matchupsResponse, FantasyContent.class);
       String weeklyScoresUri =
-          "https://fantasysports.yahooapis.com/fantasy/v2/league/449.l.16001/teams/stats;type=week;week="
+          "https://fantasysports.yahooapis.com/fantasy/v2/league/" + resourceId + ".l."
+              + leagueId
+              + "/teams/stats;type=week;week="
               + (fantasyContent.getLeague().getCurrent_week() - 1);
       String weeklyScoresResponseEntity =
           yahooRestClient
@@ -483,8 +488,8 @@ public class YahooService {
   }
 
   public String getPowerRankings() {
-    String getCurrentWeekUri = "/fantasy/v2/league/449.l." + leagueId;
-    String getMatchupsUri = "/fantasy/v2/league/449.l." + leagueId + "/scoreboard;type=week;week=";
+    String getCurrentWeekUri = "/fantasy/v2/league/" + resourceId + ".l." + leagueId;
+    String getMatchupsUri = "/fantasy/v2/league/" + resourceId + ".l." + leagueId + "/scoreboard;type=week;week=";
     Map<String, Double> powerRankings = new HashMap<>();
     Map<String, Integer> lastRank = new HashMap<>();
 
